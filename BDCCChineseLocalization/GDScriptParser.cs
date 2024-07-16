@@ -12,44 +12,121 @@ internal static class GDShraptExtensions
     }
 }
 
+public class GDNodeInfo
+{
+    public GDNodeInfo(GDNode node, TranslationToken token)
+    {
+        Node = node;
+        Token = token;
+    }
+    public GDNode           Node  { get; private set; }
+    public TranslationToken Token { get; }
+    public GDScriptReader   Reader { get; } = new GDScriptReader();
+    public bool ReplaceWith(TranslationToken token)
+    {
+        if (string.IsNullOrWhiteSpace(token.Translation))
+        {
+            return false;
+        }
+        var nodeContext = Node.ToString();
+        if (token.Translation == nodeContext)
+        {
+            return false;
+        }
+        if (token.Original != nodeContext)
+        {
+            return false;
+        }
+
+        return ReplaceWith(Reader.ParseExpression(token.Translation));
+
+    }
+    public bool ReplaceWith(GDNode newNode)
+    {
+        if (!newNode.HasTokens)
+        {
+            return false;
+        }
+        if (newNode.ToString() == Node.ToString())
+        {
+            return false;
+        }
+        Node.Parent.Form.AddBeforeToken(newNode, Node);
+        Node.RemoveFromParent();
+        Node = newNode;
+        Token.Translation = newNode.ToString();
+        return true;
+    }
+}
+
 public class GDScriptParser
 {
-    public static readonly GDScriptReader Reader = new GDScriptReader();
-    public static GDScriptParser Parse(string context, string? prefix = default)
+    public   GDScriptReader Reader = new GDScriptReader();
+    public static GDScriptParser Parse(string content, string? prefix = default)
     {
-        var parser = new GDScriptParser(Reader.ParseFileContent(context), prefix);
+        var parser = new GDScriptParser(prefix);
+        parser.SetClassDeclarationContent(content);
         return parser;
     }
     public static GDScriptParser ParseFile(string path, string? prefix = default)
     {
-        var parser = new GDScriptParser(Reader.ParseFile(path), prefix);
+        var parser = new GDScriptParser( prefix);
+        parser.SetClassDeclarationFile(path);
         return parser;
+    }
+    public GDScriptParser(string? prefix = default)
+    {
+        Prefix = prefix ?? string.Empty;
+    }
+    public void SetClassDeclarationContent(string content)
+    {
+        ClassDeclaration = Reader.ParseFileContent(content);
+    }
+    public void SetClassDeclarationFile(string path)
+    {
+        ClassDeclaration = Reader.ParseFile(path);
     }
     public GDScriptParser(GDClassDeclaration classDeclaration, string? prefix = default)
     {
         Prefix = prefix ?? string.Empty;
         ClassDeclaration = classDeclaration;
     }
-    public ulong                                Index            { get; private set; } = 0;
-    public List<TranslationToken>               Tokens           { get; private set; } = new List<TranslationToken>(512);
-    public ConcurrentDictionary<string, GDNode> Nodes            { get; private set; } = new ConcurrentDictionary<string, GDNode>();
-    public GDClassDeclaration?                  ClassDeclaration { get; private set; }
-    public string                               Prefix           { get; private set; }
-    public bool                                 HasPrefix        => !string.IsNullOrEmpty(Prefix);
-    public string                               Key              => HasPrefix ? $"{Prefix}_{Index}" : $"0_{Index}";
+    public ulong                                    Index            { get; private set; } = 0;
+    public List<TranslationToken>                   Tokens           { get; private set; } = new List<TranslationToken>(512);
+    public ConcurrentDictionary<string, GDNodeInfo> Nodes            { get; private set; } = new ConcurrentDictionary<string, GDNodeInfo>();
+    public GDClassDeclaration?                      ClassDeclaration { get; private set; }
+    public string                                   Prefix           { get; private set; }
+    public bool                                     HasPrefix        => !string.IsNullOrEmpty(Prefix);
+    public string                                   Key              => HasPrefix ? $"{Prefix}_{Index}" : $"0_{Index}";
 
     public bool HasTokens => Tokens.Count > 0;
+    public void AddToken(TranslationToken original)
+    {
+
+        Tokens.Add(original);
+
+        Index++;
+    }
     public void AddToken(string original)
     {
-       
-        Tokens.Add(TranslationToken.Create(Key, original));
-     
+
+        var token = TranslationToken.Create(Key, original);
+        Tokens.Add(token);
+
         Index++;
     }
     public void AddToken(GDNode original)
-    { 
-        Nodes.TryAdd(Key, original);
-        AddToken(original.ToString());
+    {
+        var info = new GDNodeInfo(original,        TranslationToken.Create(Key, original.ToString()));
+        Nodes.TryAdd(Key, new GDNodeInfo(original, TranslationToken.Create(Key, original.ToString())));
+
+        AddToken(info.Token);
+
+    }
+    public void Translate(TranslationToken token)
+    {
+        if (!Nodes.TryGetValue(token.Key, out var nodeInfo)) return;
+        nodeInfo.ReplaceWith(token);
     }
     public void Translate(List<TranslationToken> translationTokens)
     {
@@ -57,18 +134,13 @@ public class GDScriptParser
         {
             return;
         }
+
         foreach (var token in translationTokens)
         {
-            if (!Nodes.TryGetValue(token.Key, out var node)) continue;
-            if (string.IsNullOrWhiteSpace(token.Translation))
-            {
-                continue;
-            }
-            node.Parent.Form.AddBeforeToken(Reader.ParseExpression(token.Translation),node);
-            node.RemoveFromParent();
+            Translate(token);
         }
     }
-    
+
     public void Parse()
     {
         if (ClassDeclaration is null)

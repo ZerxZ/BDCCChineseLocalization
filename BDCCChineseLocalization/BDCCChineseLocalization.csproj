@@ -12,6 +12,7 @@
       <PackageReference Include="CommandDotNet" Version="7.0.4" />
       <PackageReference Include="GDShrapt.Reader" Version="4.3.0-alpha" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+      <PackageReference Include="PromptPlus" Version="4.2.0" />
     </ItemGroup>
 
 </Project>
