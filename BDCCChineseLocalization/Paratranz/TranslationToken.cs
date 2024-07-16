@@ -28,5 +28,8 @@ namespace BDCCChineseLocalization.Paratranz
         public        string Translation { get; set; } = string.Empty;
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string? Context     { get; set; } = null;
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public string? Type        { get; set; } = null;
+        
     }
 }

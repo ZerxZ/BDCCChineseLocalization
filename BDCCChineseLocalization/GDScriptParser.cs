@@ -19,8 +19,8 @@ public class GDNodeInfo
         Node = node;
         Token = token;
     }
-    public GDNode           Node  { get; private set; }
-    public TranslationToken Token { get; }
+    public GDNode           Node   { get; private set; }
+    public TranslationToken Token  { get; }
     public GDScriptReader   Reader { get; } = new GDScriptReader();
     public bool ReplaceWith(TranslationToken token)
     {
@@ -61,7 +61,7 @@ public class GDNodeInfo
 
 public class GDScriptParser
 {
-    public   GDScriptReader Reader = new GDScriptReader();
+    public GDScriptReader Reader = new GDScriptReader();
     public static GDScriptParser Parse(string content, string? prefix = default)
     {
         var parser = new GDScriptParser(prefix);
@@ -70,7 +70,7 @@ public class GDScriptParser
     }
     public static GDScriptParser ParseFile(string path, string? prefix = default)
     {
-        var parser = new GDScriptParser( prefix);
+        var parser = new GDScriptParser(prefix);
         parser.SetClassDeclarationFile(path);
         return parser;
     }
@@ -117,10 +117,87 @@ public class GDScriptParser
     }
     public void AddToken(GDNode original)
     {
-        var info = new GDNodeInfo(original,        TranslationToken.Create(Key, original.ToString()));
-        Nodes.TryAdd(Key, info);
+        foreach (var gdStringNode in original.AllNodes.OfType<GDStringNode>())
+        {
+            var skip   = false;
+            var parent = gdStringNode.Parent as GDStringExpression;
+            foreach (var gdNode in gdStringNode.Parents)
+            {
+                // if (original == gdNode)
+                // {
+                //     skip = true;
+                //     break;
+                // }
+                if (gdNode is GDIndexerExpression)
+                {
+                    skip = true;
+                    break;
+                }
+                if (gdNode is GDDictionaryKeyValueDeclaration gdDictionaryKeyValueDeclaration)
+                {
+                    if (gdDictionaryKeyValueDeclaration.Key == gdStringNode.Parent)
+                    {
+                        skip = true;
+                        break;
+                    }
+                }
+                if (gdNode is GDExpressionsList gdExpressionsList && gdExpressionsList.Parent is GDCallExpression gdCallExpression)
+                {
 
-        AddToken(info.Token);
+                    var callExpression = gdCallExpression.CallerExpression;
+                    if (callExpression is GDMemberOperatorExpression gdMemberOperatorExpression)
+                    {
+                        var identifier = gdMemberOperatorExpression.Identifier;
+                        if (identifier.ToString() == "connect")
+                        {
+                            var index = gdExpressionsList.IndexOf(parent);
+                            if (index <= 2)
+                            {
+                                skip = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (callExpression is GDIdentifierExpression gdIdentifierExpression)
+                    {
+                        var identifier = gdIdentifierExpression.ToString();
+                        if (identifier == "emit_signal")
+                        {
+                            var index = gdExpressionsList.IndexOf(parent);
+                            if (index <= 0)
+                            {
+                                skip = true;
+                                break;
+                            }
+                        }
+                        else if (identifier == "Color")
+                        {
+                            skip = true;
+                            break;
+                        }
+
+                    }
+
+                }
+            }
+            var parts = gdStringNode.Parts.ToString();
+            if (parts.StartsWith("res://") || parts.StartsWith("user://"))
+            {
+                continue;
+            }
+            if (skip)
+            {
+                continue;
+            }
+
+            var info = new GDNodeInfo(original, TranslationToken.Create(Key, gdStringNode.Parts.ToString(), "", original.ToString()));
+            Nodes.TryAdd(Key, info);
+
+            // info.Token.Type = string.Join(',', gdStringNode.Parents.Select(x => x.GetType().Name));
+
+            AddToken(info.Token);
+        }
+
 
     }
     public void Translate(TranslationToken token)
@@ -180,6 +257,7 @@ public class GDScriptParser
                     {
                         continue;
                     }
+
                     AddToken(gdExpressionStatement);
                     break;
                 }
