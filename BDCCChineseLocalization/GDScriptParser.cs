@@ -118,7 +118,7 @@ public class GDScriptParser
     public void AddToken(GDNode original)
     {
         var info = new GDNodeInfo(original,        TranslationToken.Create(Key, original.ToString()));
-        Nodes.TryAdd(Key, new GDNodeInfo(original, TranslationToken.Create(Key, original.ToString())));
+        Nodes.TryAdd(Key, info);
 
         AddToken(info.Token);
 
