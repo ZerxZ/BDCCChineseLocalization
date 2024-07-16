@@ -158,7 +158,7 @@ public class GDScriptParser
                                 break;
                             }
                         }
-                        else if (identifier is "get_node" or "get_node_or_null")
+                        else if (identifier is "get_node" or "get_node_or_null"  or "has")
                         {
                             skip = true;
                             break;
