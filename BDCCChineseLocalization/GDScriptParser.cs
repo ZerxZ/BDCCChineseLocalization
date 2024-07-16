@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Drawing;
 using BDCCChineseLocalization.Paratranz;
 using GDShrapt.Reader;
 
@@ -147,8 +148,8 @@ public class GDScriptParser
                     var callExpression = gdCallExpression.CallerExpression;
                     if (callExpression is GDMemberOperatorExpression gdMemberOperatorExpression)
                     {
-                        var identifier = gdMemberOperatorExpression.Identifier;
-                        if (identifier.ToString() == "connect")
+                        var identifier = gdMemberOperatorExpression.Identifier.ToString();
+                        if (identifier == "connect")
                         {
                             var index = gdExpressionsList.IndexOf(parent);
                             if (index <= 2)
@@ -157,6 +158,12 @@ public class GDScriptParser
                                 break;
                             }
                         }
+                        else if (identifier is "get_node" or "get_node_or_null")
+                        {
+                            skip = true;
+                            break;
+                        }
+                        
                     }
                     if (callExpression is GDIdentifierExpression gdIdentifierExpression)
                     {
@@ -170,7 +177,7 @@ public class GDScriptParser
                                 break;
                             }
                         }
-                        else if (identifier == "Color")
+                        else if (identifier is "Color" or "get_node" or "get_node_or_null" or "preload" or "load")
                         {
                             skip = true;
                             break;
@@ -180,8 +187,9 @@ public class GDScriptParser
 
                 }
             }
+
             var parts = gdStringNode.Parts.ToString();
-            if (parts.StartsWith("res://") || parts.StartsWith("user://"))
+            if (parts.StartsWith("res://") || parts.StartsWith("user://") || parts.Length < 3)
             {
                 continue;
             }
