@@ -187,8 +187,9 @@ public class GDScriptParser
 
                 }
             }
-
+          
             var parts = gdStringNode.Parts.ToString();
+            
             if (parts.StartsWith("res://") || parts.StartsWith("user://") || parts.Length < 3)
             {
                 continue;
@@ -197,8 +198,8 @@ public class GDScriptParser
             {
                 continue;
             }
-
-            var info = new GDNodeInfo(original, TranslationToken.Create(Key, gdStringNode.Parts.ToString(), "", original.ToString()));
+            // Console.WriteLine($"gdStringNodeParts: {gdStringNode.Parts} {gdStringNode.Parts.GetType().Name}");
+            var info = new GDNodeInfo(original, TranslationToken.Create(Key, parts, "", original.ToString()));
             Nodes.TryAdd(Key, info);
 
             // info.Token.Type = string.Join(',', gdStringNode.Parents.Select(x => x.GetType().Name));
