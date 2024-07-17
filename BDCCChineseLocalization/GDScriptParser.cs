@@ -101,25 +101,38 @@ public class GDScriptParser
     public string                                   Key              => HasPrefix ? $"{Prefix}_{Index}" : $"0_{Index}";
 
     public bool HasTokens => Tokens.Count > 0;
-    public void AddToken(TranslationToken original)
-    {
 
-        Tokens.Add(original);
 
-        Index++;
-    }
-    public void AddToken(string original)
-    {
-
-        var token = TranslationToken.Create(Key, original);
-        Tokens.Add(token);
-
-        Index++;
-    }
     public void AddToken(GDNode original)
     {
-        foreach (var gdStringNode in original.AllNodes.OfType<GDStringNode>())
+        var indexNode = 0;
+        if (original.FirstChildNode is GDReturnExpression or GDDualOperatorExpression)
         {
+            switch (original.FirstChildNode)
+            {
+                case GDReturnExpression gdReturnExpression when gdReturnExpression.FirstChildNode is GDCallExpression:
+                    break;
+                case GDDualOperatorExpression gdDualOperatorExpression when gdDualOperatorExpression.RightExpression is not GDStringExpression:
+                    break;
+                default:
+                {
+                    var info = new GDNodeInfo(original, TranslationToken.Create(Key, original.ToString()));
+                    Nodes.TryAdd(Key, info);
+
+                    // info.Token.Type = string.Join(',', original.Nodes.Select(x=>x.GetType().Name));
+
+                    Tokens.Add(info.Token);
+                    Index++;
+                    return;
+                }
+            }
+
+        }
+        var gdStringNodes = original.AllNodes.OfType<GDStringNode>().ToList();
+        var count         = gdStringNodes.Count;
+        foreach (var gdStringNode in gdStringNodes)
+        {
+
             var skip   = false;
             var parent = gdStringNode.Parent as GDStringExpression;
             foreach (var gdNode in gdStringNode.Parents)
@@ -158,12 +171,21 @@ public class GDScriptParser
                                 break;
                             }
                         }
-                        else if (identifier is "get_node" or "get_node_or_null"  or "has")
+                        else if (identifier is "get_node" or "get_node_or_null" or "has")
                         {
                             skip = true;
                             break;
                         }
-                        
+                        else if (identifier is "replace")
+                        {
+                            var index = gdExpressionsList.IndexOf(parent);
+                            if (index <= 2 && identifier.Length <= 2)
+                            {
+                                skip = true;
+                                break;
+                            }
+                        }
+
                     }
                     if (callExpression is GDIdentifierExpression gdIdentifierExpression)
                     {
@@ -187,10 +209,10 @@ public class GDScriptParser
 
                 }
             }
-          
+
             var parts = gdStringNode.Parts.ToString();
-            
-            if (parts.StartsWith("res://") || parts.StartsWith("user://") || parts.Length < 3)
+
+            if (parts.StartsWith("res://") || parts.StartsWith("user://") || string.IsNullOrWhiteSpace(parts) || parts.Length <= 2)
             {
                 continue;
             }
@@ -198,15 +220,19 @@ public class GDScriptParser
             {
                 continue;
             }
+            var key = count > 1 ? $"{Key}_{indexNode}" : Key;
             // Console.WriteLine($"gdStringNodeParts: {gdStringNode.Parts} {gdStringNode.Parts.GetType().Name}");
-            var info = new GDNodeInfo(original, TranslationToken.Create(Key, parts, "", original.ToString()));
-            Nodes.TryAdd(Key, info);
+            var info = new GDNodeInfo(original, TranslationToken.Create(key, parts, "", original.ToString()));
+            Nodes.TryAdd(key, info);
 
             // info.Token.Type = string.Join(',', gdStringNode.Parents.Select(x => x.GetType().Name));
 
-            AddToken(info.Token);
-        }
+            Tokens.Add(info.Token);
+            indexNode++;
 
+
+        }
+        Index++;
 
     }
     public void Translate(TranslationToken token)
