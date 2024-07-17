@@ -1,7 +1,20 @@
-﻿using BDCCChineseLocalization;
+﻿using System.Text;
+using BDCCChineseLocalization;
 using BDCCChineseLocalization.Paratranz;
 using CommandDotNet;
 using GDShrapt.Reader;
+using Newtonsoft.Json;
+
+public class ErrorFile
+{
+    public ErrorFile(string file, Exception exception)
+    {
+        File = file;
+        Exception = exception;
+    }
+    public string    File      { get; }
+    public Exception Exception { get; }
+}
 
 [Command(
     Description = "提取字典和翻译BDCC项目"
@@ -11,16 +24,6 @@ public class Program
     private static int Main(string[] args) =>
         new AppRunner<Program>().Run(args);
 
-    // [Command(
-    //     Description = "Adds two numbers",
-    //     UsageLines = new[] { "Add 1 2", "%AppName% %CmdPath% 1 2" },
-    //     ExtendedHelpText = "single line of extended help here")]
-    // public void Add(
-    //     [Operand(Description = "first value")]  int x,
-    //     [Operand(Description = "second value")] int y) => Console.WriteLine(x + y);
-    //
-    // // [Command(Description = "Subtracts two numbers")]
-    // // public void Subtract(int x, int y) => Console.WriteLine(x - y);
     private readonly HashSet<string> _banPath = new HashSet<string>
     {
         "LoadGameScreen",
@@ -58,10 +61,12 @@ public class Program
         {
             Directory.CreateDirectory(output);
         }
-        var files        = Directory.GetFiles(path, "*.gd", SearchOption.AllDirectories);
-        var errorFiles   = new List<string>();
-        var skippedFiles = new List<string>();
-        var completed    = 0;
+        var paratranzPath = Path.Combine(output, "paratranz");
+        var paratranzJson = Path.Combine(output, "paratranzJson");
+        var files         = Directory.GetFiles(path, "*.gd", SearchOption.AllDirectories);
+        var errorFiles    = new List<ErrorFile>();
+        var skippedFiles  = new List<string>();
+        var completed     = 0;
         foreach (var file in files)
         {
             Console.WriteLine($"Extracting file {file}");
@@ -79,30 +84,40 @@ public class Program
                 {
                     continue;
                 }
-                var outputFilePath  = Path.ChangeExtension(file.Replace(path, output), "json");
-                var outputDirectory = Path.GetDirectoryName(outputFilePath)!;
-                if (!Directory.Exists(outputDirectory))
+                var paratranzFilePath  = Path.ChangeExtension(file.Replace(path, paratranzPath), "json");
+                var paratranzDirectory = Path.GetDirectoryName(paratranzFilePath)!;
+             
+              
+                if (!Directory.Exists(paratranzDirectory))
                 {
-                    Directory.CreateDirectory(outputDirectory);
+	                Directory.CreateDirectory(paratranzDirectory);
                 }
-                ParatranzConverter.WriteFile(outputFilePath, parser.Tokens);
+                File.WriteAllText(paratranzFilePath, ParatranzConverter.Serialize(parser.Tokens));
                 completed++;
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                errorFiles.Add(file);
+                errorFiles.Add(new ErrorFile(file, e));
 
             }
 
         }
         Console.WriteLine("Extraction complete, files processed: " + completed);
+        var sb = new StringBuilder();
         if (errorFiles.Count > 0)
         {
             Console.WriteLine("Error files:");
+            sb.AppendLine("Error files:");
             foreach (var errorFile in errorFiles)
             {
-                Console.WriteLine(errorFile);
+                Console.WriteLine(errorFile.File);
+                sb.AppendLine($"File: {errorFile.File}");
+                sb.AppendLine($"Exception:\n{errorFile.Exception.ToString()}");
             }
+
+
+            File.WriteAllText(Path.Combine(output, "error.txt"), sb.ToString());
+
         }
         if (skippedFiles.Count > 0)
         {
@@ -145,16 +160,16 @@ public class Program
             Console.WriteLine($"Translation path {translation} does not exist");
             return;
         }
-        var files = Directory.GetFiles(translation, "*.json", SearchOption.AllDirectories);
-        var errorFiles = new List<string>();
-        var completed = 0;
+        var files      = Directory.GetFiles(translation, "*.json", SearchOption.AllDirectories);
+        var errorFiles = new List<ErrorFile>();
+        var completed  = 0;
         foreach (var file in files)
         {
             Console.WriteLine($"Translating file {file}");
             try
             {
-                var fileName       = Path.GetFileNameWithoutExtension(file);
-              
+                var fileName = Path.GetFileNameWithoutExtension(file);
+
                 var scriptFilePath = Path.ChangeExtension(file.Replace(translation, path), "gd");
                 var parser         = GDScriptParser.ParseFile(scriptFilePath, fileName);
                 parser.Parse();
@@ -163,17 +178,13 @@ public class Program
                     continue;
                 }
                 var translateToken = ParatranzConverter.Deserialize(File.ReadAllText(file));
-                if (translateToken is null)
-                {
-                    continue;
-                }
                 parser.Translate(translateToken);
                 File.WriteAllText(scriptFilePath, parser.ClassDeclaration!.ToString());
                 completed++;
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                errorFiles.Add(file);
+                errorFiles.Add(new ErrorFile(file, e));
             }
         }
         Console.WriteLine("Translation complete, files processed: " + completed);
@@ -185,6 +196,140 @@ public class Program
                 Console.WriteLine(errorFile);
             }
         }
-        
+
+    }
+    public void TestScript()
+    {
+        var script = """
+                     extends ItemBase
+                     
+                     var prisonerNumber = ""
+                     var inmateType = InmateType.General
+                     
+                     func _init():
+                     	id = "inmateuniform"
+                     
+                     func getVisibleName():
+                     	return InmateType.getOfficialName(inmateType).capitalize() + " inmate uniform"
+                     	
+                     func setPrisonerNumber(newnumber):
+                     	prisonerNumber = newnumber
+                     	
+                     func setInmateType(newtype):
+                     	inmateType = newtype
+                     	
+                     func getDescription():
+                     	var text = "A short sleeved shirt and some shorts, both are made out of black cloth with "+InmateType.getColorName(inmateType)+" trim."
+                     
+                     	if(prisonerNumber != null && prisonerNumber != ""):
+                     		text += " The shirt has a prisoner number attached to it that says \""+prisonerNumber+"\""
+                     	
+                     	return text
+                     
+                     func getClothingSlot():
+                     	return InventorySlot.Body
+                     
+                     func getBuffs():
+                     	return [
+                     		]
+                     
+                     func getTags():
+                     	return [
+                     		ItemTag.GeneralInmateUniform,
+                     		]
+                     
+                     func saveData():
+                     	var data = .saveData()
+                     	
+                     	data["prisonerNumber"] = prisonerNumber
+                     	data["inmateType"] = inmateType
+                     	
+                     	return data
+                     	
+                     func loadData(data):
+                     	.loadData(data)
+                     	
+                     	prisonerNumber = SAVE.loadVar(data, "prisonerNumber", "")
+                     	inmateType = SAVE.loadVar(data, "inmateType", InmateType.General)
+                     
+                     func getTakingOffStringLong(withS):
+                     	if(withS):
+                     		return "takes off your inmate shirt and pulls down the shorts"
+                     	else:
+                     		return "take off your inmate shirt and pull down the shorts"
+                     
+                     func getPuttingOnStringLong(withS):
+                     	if(withS):
+                     		return "puts on your inmate shirt and the shorts"
+                     	else:
+                     		return "put on your inmate shirt and the shorts"
+                     
+                     func generateItemState():
+                     	itemState = ShirtAndShortsState.new()
+                     	itemState.canActuallyBeDamaged = true # Is hack because there are many clothes that use this state already and don't support damaging..
+                     
+                     func getRiggedParts(_character):
+                     	if(itemState.isRemoved()):
+                     		return null
+                     	if(inmateType == InmateType.SexDeviant):
+                     		if(itemState.isSuperDamaged()):
+                     			return {
+                     				"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/LilacInmateUniformSuperDamaged.tscn",
+                     			}
+                     		if(itemState.isDamaged()):
+                     			return {
+                     				"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/LilacInmateUniformDamaged.tscn",
+                     			}
+                     		if(itemState.isHalfDamaged()):
+                     			return {
+                     				"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/LilacInmateUniformHalfDamaged.tscn",
+                     			}
+                     		return {
+                     			"clothing": "res://Inventory/RiggedModels/InmateUniform/LilacInmateUniform.tscn",
+                     		}
+                     	elif(inmateType == InmateType.HighSec):
+                     		if(itemState.isSuperDamaged()):
+                     			return {
+                     				"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/RedInmateUniformSuperDamaged.tscn",
+                     			}
+                     		if(itemState.isDamaged()):
+                     			return {
+                     				"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/RedInmateUniformDamaged.tscn",
+                     			}
+                     		if(itemState.isHalfDamaged()):
+                     			return {
+                     				"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/RedInmateUniformHalfDamaged.tscn",
+                     			}
+                     		return {
+                     			"clothing": "res://Inventory/RiggedModels/InmateUniform/RedInmateUniform.tscn",
+                     		}
+                     	
+                     	if(itemState.isSuperDamaged()):
+                     		return {
+                     			"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/OrangeInmateUniformSuperDamaged.tscn",
+                     		}
+                     	if(itemState.isDamaged()):
+                     		return {
+                     			"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/OrangeInmateUniformDamaged.tscn",
+                     		}
+                     	if(itemState.isHalfDamaged()):
+                     		return {
+                     			"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/OrangeInmateUniformHalfDamaged.tscn",
+                     		}
+                     	return {
+                     		"clothing": "res://Inventory/RiggedModels/InmateUniform/OrangeInmateUniform.tscn",
+                     	}
+                     
+                     func getInventoryImage():
+                     	if(inmateType == InmateType.SexDeviant):
+                     		return "res://Images/Items/equipment/shirtlilac.png"
+                     	if(inmateType == InmateType.HighSec):
+                     		return "res://Images/Items/equipment/shirtred.png"
+                     	return "res://Images/Items/equipment/shirtorange.png"
+                     
+                     """;
+        var parser = GDScriptParser.Parse(script);
+        parser.Parse();
+        Console.WriteLine(ParatranzConverter.Serialize(parser.Tokens));
     }
 }
