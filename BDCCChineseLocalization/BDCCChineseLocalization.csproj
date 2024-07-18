@@ -13,6 +13,7 @@
       <PackageReference Include="GDShrapt.Reader" Version="4.3.0-alpha" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
       <PackageReference Include="PromptPlus" Version="4.2.0" />
+      <PackageReference Include="Righthand.GodotTscnParser" Version="1.0.0-beta.1" />
     </ItemGroup>
 
 </Project>
