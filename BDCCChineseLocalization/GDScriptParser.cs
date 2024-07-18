@@ -199,10 +199,7 @@ public class GDScriptParser
             var token = translationTokens[i];
             if (Nodes.TryGetValue(token.Key, out var gdNodeInfo))
             {
-                if (gdNodeInfo.ReplaceWith(token))
-                {
-                    translationTokens.RemoveAt(i);
-                }
+                gdNodeInfo.ReplaceWith(token);
             }
         }
     }

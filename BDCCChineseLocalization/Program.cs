@@ -10,10 +10,20 @@ public class ErrorFile
     public ErrorFile(string file, Exception exception)
     {
         File = file;
+        Exception = exception.ToString();
+    }
+    public ErrorFile(string file, string exception)
+    {
+        File = file;
         Exception = exception;
     }
-    public string    File      { get; }
-    public Exception Exception { get; }
+    public ErrorFile()
+    {
+        File = string.Empty;
+        Exception = string.Empty;
+    }
+    public string File      { get; set; }
+    public string Exception { get; set; }
 }
 
 [Command(
@@ -23,7 +33,6 @@ public class Program
 {
     private static int Main(string[] args) =>
         new AppRunner<Program>().Run(args);
-
     private readonly HashSet<string> _banPath = new HashSet<string>
     {
         "LoadGameScreen",
@@ -76,6 +85,7 @@ public class Program
                 if (_banPath.Contains(fileName))
                 {
                     skippedFiles.Add(file);
+                    errorFiles.Add(new ErrorFile(file, "File is banned"));
                     continue;
                 }
                 var parser = GDScriptParser.ParseFile(file, fileName);
@@ -86,11 +96,11 @@ public class Program
                 }
                 var paratranzFilePath  = Path.ChangeExtension(file.Replace(path, paratranzPath), "json");
                 var paratranzDirectory = Path.GetDirectoryName(paratranzFilePath)!;
-             
-              
+
+
                 if (!Directory.Exists(paratranzDirectory))
                 {
-	                Directory.CreateDirectory(paratranzDirectory);
+                    Directory.CreateDirectory(paratranzDirectory);
                 }
                 File.WriteAllText(paratranzFilePath, ParatranzConverter.Serialize(parser.Tokens));
                 completed++;
@@ -116,8 +126,8 @@ public class Program
             }
 
 
-            File.WriteAllText(Path.Combine(output, "error.txt"), sb.ToString());
-
+            File.WriteAllText(Path.Combine(output, "error.txt"),  sb.ToString());
+            File.WriteAllText(Path.Combine(output, "error.json"), JsonConvert.SerializeObject(errorFiles));
         }
         if (skippedFiles.Count > 0)
         {
@@ -198,138 +208,168 @@ public class Program
         }
 
     }
-    public void TestScript()
-    {
-        var script = """
-                     extends ItemBase
-                     
-                     var prisonerNumber = ""
-                     var inmateType = InmateType.General
-                     
-                     func _init():
-                     	id = "inmateuniform"
-                     
-                     func getVisibleName():
-                     	return InmateType.getOfficialName(inmateType).capitalize() + " inmate uniform"
-                     	
-                     func setPrisonerNumber(newnumber):
-                     	prisonerNumber = newnumber
-                     	
-                     func setInmateType(newtype):
-                     	inmateType = newtype
-                     	
-                     func getDescription():
-                     	var text = "A short sleeved shirt and some shorts, both are made out of black cloth with "+InmateType.getColorName(inmateType)+" trim."
-                     
-                     	if(prisonerNumber != null && prisonerNumber != ""):
-                     		text += " The shirt has a prisoner number attached to it that says \""+prisonerNumber+"\""
-                     	
-                     	return text
-                     
-                     func getClothingSlot():
-                     	return InventorySlot.Body
-                     
-                     func getBuffs():
-                     	return [
-                     		]
-                     
-                     func getTags():
-                     	return [
-                     		ItemTag.GeneralInmateUniform,
-                     		]
-                     
-                     func saveData():
-                     	var data = .saveData()
-                     	
-                     	data["prisonerNumber"] = prisonerNumber
-                     	data["inmateType"] = inmateType
-                     	
-                     	return data
-                     	
-                     func loadData(data):
-                     	.loadData(data)
-                     	
-                     	prisonerNumber = SAVE.loadVar(data, "prisonerNumber", "")
-                     	inmateType = SAVE.loadVar(data, "inmateType", InmateType.General)
-                     
-                     func getTakingOffStringLong(withS):
-                     	if(withS):
-                     		return "takes off your inmate shirt and pulls down the shorts"
-                     	else:
-                     		return "take off your inmate shirt and pull down the shorts"
-                     
-                     func getPuttingOnStringLong(withS):
-                     	if(withS):
-                     		return "puts on your inmate shirt and the shorts"
-                     	else:
-                     		return "put on your inmate shirt and the shorts"
-                     
-                     func generateItemState():
-                     	itemState = ShirtAndShortsState.new()
-                     	itemState.canActuallyBeDamaged = true # Is hack because there are many clothes that use this state already and don't support damaging..
-                     
-                     func getRiggedParts(_character):
-                     	if(itemState.isRemoved()):
-                     		return null
-                     	if(inmateType == InmateType.SexDeviant):
-                     		if(itemState.isSuperDamaged()):
-                     			return {
-                     				"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/LilacInmateUniformSuperDamaged.tscn",
-                     			}
-                     		if(itemState.isDamaged()):
-                     			return {
-                     				"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/LilacInmateUniformDamaged.tscn",
-                     			}
-                     		if(itemState.isHalfDamaged()):
-                     			return {
-                     				"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/LilacInmateUniformHalfDamaged.tscn",
-                     			}
-                     		return {
-                     			"clothing": "res://Inventory/RiggedModels/InmateUniform/LilacInmateUniform.tscn",
-                     		}
-                     	elif(inmateType == InmateType.HighSec):
-                     		if(itemState.isSuperDamaged()):
-                     			return {
-                     				"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/RedInmateUniformSuperDamaged.tscn",
-                     			}
-                     		if(itemState.isDamaged()):
-                     			return {
-                     				"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/RedInmateUniformDamaged.tscn",
-                     			}
-                     		if(itemState.isHalfDamaged()):
-                     			return {
-                     				"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/RedInmateUniformHalfDamaged.tscn",
-                     			}
-                     		return {
-                     			"clothing": "res://Inventory/RiggedModels/InmateUniform/RedInmateUniform.tscn",
-                     		}
-                     	
-                     	if(itemState.isSuperDamaged()):
-                     		return {
-                     			"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/OrangeInmateUniformSuperDamaged.tscn",
-                     		}
-                     	if(itemState.isDamaged()):
-                     		return {
-                     			"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/OrangeInmateUniformDamaged.tscn",
-                     		}
-                     	if(itemState.isHalfDamaged()):
-                     		return {
-                     			"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/OrangeInmateUniformHalfDamaged.tscn",
-                     		}
-                     	return {
-                     		"clothing": "res://Inventory/RiggedModels/InmateUniform/OrangeInmateUniform.tscn",
-                     	}
-                     
-                     func getInventoryImage():
-                     	if(inmateType == InmateType.SexDeviant):
-                     		return "res://Images/Items/equipment/shirtlilac.png"
-                     	if(inmateType == InmateType.HighSec):
-                     		return "res://Images/Items/equipment/shirtred.png"
-                     	return "res://Images/Items/equipment/shirtorange.png"
-                     
-                     """;
-        var parser = GDScriptParser.Parse(script);
-        parser.Parse();
-        Console.WriteLine(ParatranzConverter.Serialize(parser.Tokens));
-    }
+//
+//     public void TestScript()
+//     {
+//         var script = """
+//                      extends ItemBase
+//
+//                      var prisonerNumber = ""
+//                      var inmateType = InmateType.General
+//
+//                      func _init():
+//                      	id = "inmateuniform"
+//
+//                      func getVisibleName():
+//                      	return InmateType.getOfficialName(inmateType).capitalize() + " inmate uniform"
+//                      	
+//                      func setPrisonerNumber(newnumber):
+//                      	prisonerNumber = newnumber
+//                      	
+//                      func setInmateType(newtype):
+//                      	inmateType = newtype
+//                      	
+//                      func getDescription():
+//                      	var text = "A short sleeved shirt and some shorts, both are made out of black cloth with "+InmateType.getColorName(inmateType)+" trim."
+//                      
+//                      	if(prisonerNumber != null && prisonerNumber != ""):
+//                      		text += " The shirt has a prisoner number attached to it that says \""+prisonerNumber+"\""
+//                      	
+//                      	return text
+//
+//                      func getClothingSlot():
+//                      	return InventorySlot.Body
+//
+//                      func getBuffs():
+//                      	return [
+//                      		]
+//
+//                      func getTags():
+//                      	return [
+//                      		ItemTag.GeneralInmateUniform,
+//                      		]
+//
+//                      func saveData():
+//                      	var data = .saveData()
+//                      	
+//                      	data["prisonerNumber"] = prisonerNumber
+//                      	data["inmateType"] = inmateType
+//                      	
+//                      	return data
+//                      	
+//                      func loadData(data):
+//                      	.loadData(data)
+//                      	
+//                      	prisonerNumber = SAVE.loadVar(data, "prisonerNumber", "")
+//                      	inmateType = SAVE.loadVar(data, "inmateType", InmateType.General)
+//
+//                      func getTakingOffStringLong(withS):
+//                      	if(withS):
+//                      		return "takes off your inmate shirt and pulls down the shorts"
+//                      	else:
+//                      		return "take off your inmate shirt and pull down the shorts"
+//
+//                      func getPuttingOnStringLong(withS):
+//                      	if(withS):
+//                      		return "puts on your inmate shirt and the shorts"
+//                      	else:
+//                      		return "put on your inmate shirt and the shorts"
+//
+//                      func generateItemState():
+//                      	itemState = ShirtAndShortsState.new()
+//                      	itemState.canActuallyBeDamaged = true # Is hack because there are many clothes that use this state already and don't support damaging..
+//
+//                      func getRiggedParts(_character):
+//                      	if(itemState.isRemoved()):
+//                      		return null
+//                      	if(inmateType == InmateType.SexDeviant):
+//                      		if(itemState.isSuperDamaged()):
+//                      			return {
+//                      				"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/LilacInmateUniformSuperDamaged.tscn",
+//                      			}
+//                      		if(itemState.isDamaged()):
+//                      			return {
+//                      				"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/LilacInmateUniformDamaged.tscn",
+//                      			}
+//                      		if(itemState.isHalfDamaged()):
+//                      			return {
+//                      				"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/LilacInmateUniformHalfDamaged.tscn",
+//                      			}
+//                      		return {
+//                      			"clothing": "res://Inventory/RiggedModels/InmateUniform/LilacInmateUniform.tscn",
+//                      		}
+//                      	elif(inmateType == InmateType.HighSec):
+//                      		if(itemState.isSuperDamaged()):
+//                      			return {
+//                      				"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/RedInmateUniformSuperDamaged.tscn",
+//                      			}
+//                      		if(itemState.isDamaged()):
+//                      			return {
+//                      				"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/RedInmateUniformDamaged.tscn",
+//                      			}
+//                      		if(itemState.isHalfDamaged()):
+//                      			return {
+//                      				"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/RedInmateUniformHalfDamaged.tscn",
+//                      			}
+//                      		return {
+//                      			"clothing": "res://Inventory/RiggedModels/InmateUniform/RedInmateUniform.tscn",
+//                      		}
+//                      	
+//                      	if(itemState.isSuperDamaged()):
+//                      		return {
+//                      			"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/OrangeInmateUniformSuperDamaged.tscn",
+//                      		}
+//                      	if(itemState.isDamaged()):
+//                      		return {
+//                      			"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/OrangeInmateUniformDamaged.tscn",
+//                      		}
+//                      	if(itemState.isHalfDamaged()):
+//                      		return {
+//                      			"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/OrangeInmateUniformHalfDamaged.tscn",
+//                      		}
+//                      	return {
+//                      		"clothing": "res://Inventory/RiggedModels/InmateUniform/OrangeInmateUniform.tscn",
+//                      	}
+//
+//                      func getInventoryImage():
+//                      	if(inmateType == InmateType.SexDeviant):
+//                      		return "res://Images/Items/equipment/shirtlilac.png"
+//                      	if(inmateType == InmateType.HighSec):
+//                      		return "res://Images/Items/equipment/shirtred.png"
+//                      	return "res://Images/Items/equipment/shirtorange.png"
+//
+//                      """;
+//         var parser = GDScriptParser.Parse(script);
+//         parser.Parse();
+//         Console.WriteLine(ParatranzConverter.Serialize(parser.Tokens));
+//     }
+//     public void TestErrorFiles(string path = "output")
+//     {
+//         var script = """
+//                      tool
+//                      extends Polygon2D
+//                      
+//                      				
+//                      func SetFlipLegPos(_newvalue):
+//                      	if(color.r >= 0.99):
+//                      		# was left, became right
+//                      		color = Color("#AAAAAA")
+//                      		global_position -= legsSwitchDifference
+//                      	else:
+//                      		# was right, became left
+//                      		color = Color.white
+//                      		global_position += legsSwitchDifference
+//                      """;
+//         try
+//         {
+//             var reader = new GDScriptReader();
+//             reader.ParseFileContent(script);
+//         }
+//         catch (Exception e)
+//         {
+//             Console.WriteLine(e);
+//             throw;
+//         }
+//
+//     }
 }
