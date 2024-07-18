@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Drawing;
+using System.Reflection.Metadata;
 using BDCCChineseLocalization.Paratranz;
 using CommandDotNet.Tokens;
 using GDShrapt.Reader;
@@ -60,8 +61,9 @@ public class GDScriptParser
     public void AddToken(GDNode original)
     {
 
-        if (original.FirstChildNode is GDReturnExpression or GDDualOperatorExpression)
+        if (original.FirstChildNode is GDReturnExpression or GDDualOperatorExpression or GDCallExpression)
         {
+            GDNodeInfo gdNodeInfo;
             switch (original.FirstChildNode)
             {
                 case GDReturnExpression gdReturnExpression:
@@ -74,17 +76,105 @@ public class GDScriptParser
                         case GDDictionaryInitializerExpression:
                             break;
                         default:
-                            var gdNodeInfo = new GDNodeInfo(original, Prefix);
+                            gdNodeInfo = new GDNodeInfo(original, Prefix);
                             Tokens.Add(gdNodeInfo.Token);
                             Nodes.TryAdd(gdNodeInfo.Token.Key, gdNodeInfo);
                             return;
                     }
                     break;
-                case GDDualOperatorExpression { RightExpression: not GDStringExpression and not GDDualOperatorExpression }:
+                case GDDualOperatorExpression { RightExpression: GDStringExpression }:
                     break;
+                case GDCallExpression gdCallExpression:
+                    var callExpression = gdCallExpression.CallerExpression;
+                    var identifier     = "";
+                    switch (callExpression)
+                    {
+                        case GDMemberOperatorExpression gdMemberOperatorExpression:
+                        {
+                            identifier = gdMemberOperatorExpression.Identifier.ToString();
+                            if (identifier is "get_node" or "get_node_or_null" or "has")
+                            {
+                                return;
+                            }
+                            break;
+                        }
+                        case GDIdentifierExpression gdIdentifierExpression:
+                        {
+                            identifier = gdIdentifierExpression.ToString();
+                            if (identifier is "Color" or "get_node" or "get_node_or_null" or "preload" or "load")
+                            {
+                                return;
+                            }
+                            break;
+                        }
+                    }
+                    var parameters = gdCallExpression.Parameters;
+                    switch (identifier)
+                    {
+                        case "emit_signal":
+                            if (parameters.Count <= 1)
+                            {
+                                return;
+                            }
+                            break;
+                        case "connect":
+                            if (parameters.Count <= 3)
+                            {
+                                return;
+                            }
+                            break;
+                    }
+                    for (var index = 0; index < parameters.Count; index++)
+                    {
+                        var parameter = parameters[index];
+                        switch (parameter)
+                        {
+                            case GDDualOperatorExpression gdDualOperatorExpression when gdDualOperatorExpression.HasStringNode():
+                                switch (identifier)
+                                {
+                                    case "emit_signal":
+                                        if (index <= 1)
+                                        {
+                                            continue;
+                                        }
+                                        break;
+                                    case "connect":
+                                        if (index <= 3)
+                                        {
+                                            continue;
+                                        }
+                                        break;
+                                }
+                                gdNodeInfo = new GDNodeInfo(original, gdDualOperatorExpression, Prefix);
+                                Tokens.Add(gdNodeInfo.Token);
+                                Nodes.TryAdd(gdNodeInfo.Token.Key, gdNodeInfo);
+                                break;
+                            case GDStringExpression gdStringExpression:
+                                switch (identifier)
+                                {
+                                    case "emit_signal":
+                                        if (index <= 1)
+                                        {
+                                            continue;
+                                        }
+                                        break;
+                                    case "connect":
+                                        if (index <= 3)
+                                        {
+                                            continue;
+                                        }
+                                        break;
+                                }
+                                gdNodeInfo = new GDNodeInfo(original, gdStringExpression, Prefix);
+                                Tokens.Add(gdNodeInfo.Token);
+                                Nodes.TryAdd(gdNodeInfo.Token.Key, gdNodeInfo);
+                                break;
+                        }
+                    }
+                    return;
                 default:
                 {
-                    var gdNodeInfo = new GDNodeInfo(original, Prefix);
+                    gdNodeInfo = new GDNodeInfo(original, Prefix);
                     Tokens.Add(gdNodeInfo.Token);
                     Nodes.TryAdd(gdNodeInfo.Token.Key, gdNodeInfo);
                     return;
@@ -94,12 +184,10 @@ public class GDScriptParser
         }
 
         var gdStringNodes = original.AllNodes.OfType<GDStringNode>().ToList();
-        var gdNodeInfos   = new List<GDNodeInfo>();
         foreach (var gdStringNode in gdStringNodes)
         {
 
-            var skip   = false;
-            var parent = gdStringNode.Parent as GDStringExpression;
+            var skip = false;
             foreach (var gdNode in gdStringNode.Parents)
             {
                 if (gdNode is GDIndexerExpression)
@@ -114,59 +202,6 @@ public class GDScriptParser
                         skip = true;
                         break;
                     }
-                }
-                if (gdNode is GDExpressionsList gdExpressionsList && gdExpressionsList.Parent is GDCallExpression gdCallExpression)
-                {
-
-                    var callExpression = gdCallExpression.CallerExpression;
-                    if (callExpression is GDMemberOperatorExpression gdMemberOperatorExpression)
-                    {
-                        var identifier = gdMemberOperatorExpression.Identifier.ToString();
-                        if (identifier == "connect")
-                        {
-                            var index = gdExpressionsList.IndexOf(parent);
-                            if (index <= 2)
-                            {
-                                skip = true;
-                                break;
-                            }
-                        }
-                        else if (identifier is "get_node" or "get_node_or_null" or "has")
-                        {
-                            skip = true;
-                            break;
-                        }
-                        else if (identifier is "replace")
-                        {
-                            var index = gdExpressionsList.IndexOf(parent);
-                            if (index <= 2 && identifier.Length <= 2)
-                            {
-                                skip = true;
-                                break;
-                            }
-                        }
-
-                    }
-                    if (callExpression is GDIdentifierExpression gdIdentifierExpression)
-                    {
-                        var identifier = gdIdentifierExpression.ToString();
-                        if (identifier == "emit_signal")
-                        {
-                            var index = gdExpressionsList.IndexOf(parent);
-                            if (index <= 0)
-                            {
-                                skip = true;
-                                break;
-                            }
-                        }
-                        else if (identifier is "Color" or "get_node" or "get_node_or_null" or "preload" or "load")
-                        {
-                            skip = true;
-                            break;
-                        }
-
-                    }
-
                 }
             }
 

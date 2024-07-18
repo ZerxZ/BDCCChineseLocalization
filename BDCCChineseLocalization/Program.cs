@@ -1,9 +1,11 @@
-﻿using System.Text;
+﻿using System.IO.Compression;
+using System.Text;
 using BDCCChineseLocalization;
 using BDCCChineseLocalization.Paratranz;
 using CommandDotNet;
 using GDShrapt.Reader;
 using Newtonsoft.Json;
+using Paratranz.NET;
 
 public class ErrorFile
 {
@@ -47,8 +49,8 @@ public class Program
         ]
     )]
     public void Extract(
-        [Option('p', "path",   Description = "项目路径")]   string path   = "",
-        [Option('o', "output", Description = "输出项目路径")] string output = ""
+        [Option('p', "path",   Description = "项目路径")]   string path   = "BDCC",
+        [Option('o', "output", Description = "输出项目路径")] string output = "Output"
     )
     {
         // 判断是否绝对路径
@@ -146,9 +148,9 @@ public class Program
             "%AppName% %CmdPath% -p ./BDCC -t ./BDCCChineseLocalization"
         ]
     )]
-    public void Translate(
-        [Option('p', "path",        Description = "项目路径")]   string path        = "",
-        [Option('t', "translation", Description = "翻译项目路径")] string translation = ""
+    public async Task Translate(
+        [Option('p', "path",        Description = "项目路径")]   string path        = "BDCC",
+        [Option('t', "translation", Description = "翻译项目路径")] string translation = "Output"
     )
     {
         if (!Path.IsPathRooted(path))
@@ -159,6 +161,43 @@ public class Program
         {
             translation = Path.GetFullPath(translation);
         }
+
+        var paratranzPath = Path.GetFullPath("Paratranz");
+        if (Directory.Exists(paratranzPath))
+        {
+            Directory.Delete(paratranzPath, true);
+        }
+
+        var artifactDirPath  = Path.GetFullPath("Artifact");
+        var artifactFilePath = Path.Combine(artifactDirPath, "artifact.zip");
+
+        if (Directory.Exists(artifactDirPath))
+        {
+            Directory.Delete(artifactDirPath, true);
+        }
+        Directory.CreateDirectory(artifactDirPath);
+        // Directory.CreateDirectory(paratranzPath);
+
+        if (File.Exists(artifactFilePath))
+        {
+            File.Delete(artifactFilePath);
+        }
+
+        using var       client            = new ParatranzClient("3aba7fa67ee7c371ed587ae3aeb7de63");
+        const int       projectId         = 10958;
+        var             cancellationToken = new CancellationToken();
+        var             buildInfo         = await client.BuildArtifactAsync(projectId, cancellationToken);
+        var             downloadStream    = await client.DownloadArtifactAsync(projectId, cancellationToken);
+        await using var fs                = File.Open(artifactFilePath, FileMode.Create);
+        Console.WriteLine($"Downloading artifact to {artifactFilePath}");
+        await downloadStream.CopyToAsync(fs, cancellationToken);
+        fs.Close();
+        downloadStream.Close();
+        ZipFile.ExtractToDirectory(artifactFilePath, artifactDirPath);
+        var extractedDirPath = Path.Combine(artifactDirPath, "utf8");
+        Directory.Move(extractedDirPath, paratranzPath);
+
+
         Console.WriteLine($"Translating project at {path} with translations at {translation}");
         if (!Directory.Exists(path))
         {
@@ -170,7 +209,7 @@ public class Program
             Console.WriteLine($"Translation path {translation} does not exist");
             return;
         }
-        var files      = Directory.GetFiles(translation, "*.json", SearchOption.AllDirectories);
+        var files      = Directory.GetFiles(paratranzPath, "*.json", SearchOption.AllDirectories);
         var errorFiles = new List<ErrorFile>();
         var completed  = 0;
         foreach (var file in files)
@@ -208,168 +247,254 @@ public class Program
         }
 
     }
-//
-//     public void TestScript()
-//     {
-//         var script = """
-//                      extends ItemBase
-//
-//                      var prisonerNumber = ""
-//                      var inmateType = InmateType.General
-//
-//                      func _init():
-//                      	id = "inmateuniform"
-//
-//                      func getVisibleName():
-//                      	return InmateType.getOfficialName(inmateType).capitalize() + " inmate uniform"
-//                      	
-//                      func setPrisonerNumber(newnumber):
-//                      	prisonerNumber = newnumber
-//                      	
-//                      func setInmateType(newtype):
-//                      	inmateType = newtype
-//                      	
-//                      func getDescription():
-//                      	var text = "A short sleeved shirt and some shorts, both are made out of black cloth with "+InmateType.getColorName(inmateType)+" trim."
-//                      
-//                      	if(prisonerNumber != null && prisonerNumber != ""):
-//                      		text += " The shirt has a prisoner number attached to it that says \""+prisonerNumber+"\""
-//                      	
-//                      	return text
-//
-//                      func getClothingSlot():
-//                      	return InventorySlot.Body
-//
-//                      func getBuffs():
-//                      	return [
-//                      		]
-//
-//                      func getTags():
-//                      	return [
-//                      		ItemTag.GeneralInmateUniform,
-//                      		]
-//
-//                      func saveData():
-//                      	var data = .saveData()
-//                      	
-//                      	data["prisonerNumber"] = prisonerNumber
-//                      	data["inmateType"] = inmateType
-//                      	
-//                      	return data
-//                      	
-//                      func loadData(data):
-//                      	.loadData(data)
-//                      	
-//                      	prisonerNumber = SAVE.loadVar(data, "prisonerNumber", "")
-//                      	inmateType = SAVE.loadVar(data, "inmateType", InmateType.General)
-//
-//                      func getTakingOffStringLong(withS):
-//                      	if(withS):
-//                      		return "takes off your inmate shirt and pulls down the shorts"
-//                      	else:
-//                      		return "take off your inmate shirt and pull down the shorts"
-//
-//                      func getPuttingOnStringLong(withS):
-//                      	if(withS):
-//                      		return "puts on your inmate shirt and the shorts"
-//                      	else:
-//                      		return "put on your inmate shirt and the shorts"
-//
-//                      func generateItemState():
-//                      	itemState = ShirtAndShortsState.new()
-//                      	itemState.canActuallyBeDamaged = true # Is hack because there are many clothes that use this state already and don't support damaging..
-//
-//                      func getRiggedParts(_character):
-//                      	if(itemState.isRemoved()):
-//                      		return null
-//                      	if(inmateType == InmateType.SexDeviant):
-//                      		if(itemState.isSuperDamaged()):
-//                      			return {
-//                      				"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/LilacInmateUniformSuperDamaged.tscn",
-//                      			}
-//                      		if(itemState.isDamaged()):
-//                      			return {
-//                      				"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/LilacInmateUniformDamaged.tscn",
-//                      			}
-//                      		if(itemState.isHalfDamaged()):
-//                      			return {
-//                      				"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/LilacInmateUniformHalfDamaged.tscn",
-//                      			}
-//                      		return {
-//                      			"clothing": "res://Inventory/RiggedModels/InmateUniform/LilacInmateUniform.tscn",
-//                      		}
-//                      	elif(inmateType == InmateType.HighSec):
-//                      		if(itemState.isSuperDamaged()):
-//                      			return {
-//                      				"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/RedInmateUniformSuperDamaged.tscn",
-//                      			}
-//                      		if(itemState.isDamaged()):
-//                      			return {
-//                      				"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/RedInmateUniformDamaged.tscn",
-//                      			}
-//                      		if(itemState.isHalfDamaged()):
-//                      			return {
-//                      				"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/RedInmateUniformHalfDamaged.tscn",
-//                      			}
-//                      		return {
-//                      			"clothing": "res://Inventory/RiggedModels/InmateUniform/RedInmateUniform.tscn",
-//                      		}
-//                      	
-//                      	if(itemState.isSuperDamaged()):
-//                      		return {
-//                      			"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/OrangeInmateUniformSuperDamaged.tscn",
-//                      		}
-//                      	if(itemState.isDamaged()):
-//                      		return {
-//                      			"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/OrangeInmateUniformDamaged.tscn",
-//                      		}
-//                      	if(itemState.isHalfDamaged()):
-//                      		return {
-//                      			"clothing": "res://Inventory/RiggedModels/InmateUniform/damaged/OrangeInmateUniformHalfDamaged.tscn",
-//                      		}
-//                      	return {
-//                      		"clothing": "res://Inventory/RiggedModels/InmateUniform/OrangeInmateUniform.tscn",
-//                      	}
-//
-//                      func getInventoryImage():
-//                      	if(inmateType == InmateType.SexDeviant):
-//                      		return "res://Images/Items/equipment/shirtlilac.png"
-//                      	if(inmateType == InmateType.HighSec):
-//                      		return "res://Images/Items/equipment/shirtred.png"
-//                      	return "res://Images/Items/equipment/shirtorange.png"
-//
-//                      """;
-//         var parser = GDScriptParser.Parse(script);
-//         parser.Parse();
-//         Console.WriteLine(ParatranzConverter.Serialize(parser.Tokens));
-//     }
-//     public void TestErrorFiles(string path = "output")
-//     {
-//         var script = """
-//                      tool
-//                      extends Polygon2D
-//                      
-//                      				
-//                      func SetFlipLegPos(_newvalue):
-//                      	if(color.r >= 0.99):
-//                      		# was left, became right
-//                      		color = Color("#AAAAAA")
-//                      		global_position -= legsSwitchDifference
-//                      	else:
-//                      		# was right, became left
-//                      		color = Color.white
-//                      		global_position += legsSwitchDifference
-//                      """;
-//         try
-//         {
-//             var reader = new GDScriptReader();
-//             reader.ParseFileContent(script);
-//         }
-//         catch (Exception e)
-//         {
-//             Console.WriteLine(e);
-//             throw;
-//         }
-//
-//     }
+
+    public void TestScript()
+    {
+        var script = """
+                     func getDefaultEquipment():
+                     	return ["EngineerClothesAlex", "plainBriefs"]
+                     
+                     func _getAttacks():
+                     	return ["NpcScratch", "StrongBite", "simplekickattack", "HeatGrenade", "BolaThrow", "ForceBlindfoldPC", "trygetupattack"]
+                     
+                     func getFightIntro(_battleName):
+                     	return "Alex grunts as he gets into a fighting stance, his prosthetic spine is not meant for combat. But he seems tough even with that handicap."
+                     
+                     func getLootTable(_battleName):
+                     	return EngineerLoot.new()
+                     
+                     func reactRestraint(restraintType, restraintAmount, isGettingForced):
+                     	if(!isGettingForced):
+                     		if(restraintAmount == 0):
+                     			return RNG.pick([
+                     				"You can't tie me up so easily",
+                     				"Try harder next time",
+                     				"What now?",
+                     				"You can't tie up a rigger",
+                     			])
+                     		
+                     		return RNG.pick([
+                     			"I will break your toys",
+                     			"These can't hold me back forever",
+                     		])
+                     	
+                     	if(isGettingForced):
+                     		if(restraintAmount > 2 && RNG.chance(30)):
+                     			return RNG.pick([
+                     				"Stop with this crap",
+                     				"Enough, save these for lilacs and reds",
+                     				"How many more do you have?",
+                     			])
+                     		
+                     		if(restraintType == RestraintType.Gag):
+                     			return RNG.pick([
+                     				"Hey! Don't fucking gag me",
+                     				"You think gagging me will save you?",
+                     			])
+                     		if(restraintType == RestraintType.Muzzle):
+                     			return RNG.pick([
+                     				"Hey! Don't fucking muzzle me",
+                     				"You think muzzling me will save you?",
+                     			])
+                     		if(restraintType == RestraintType.ButtPlug):
+                     			return RNG.pick([
+                     				"Hey! Not my ass!",
+                     				"Don't touch my fucking ass",
+                     			])
+                     	
+                     		return RNG.pick([
+                     			"Hey! Restraints are my thing!",
+                     			"The fuck are you doing?",
+                     			"You are making me real mad",
+                     			"You can't win like this",
+                     			"Fight me instead of this shit",
+                     			"Keep that shit away from me",
+                     		])
+                     	return null
+                     """;
+        var parser = GDScriptParser.Parse(script);
+        parser.Parse();
+        Console.WriteLine(ParatranzConverter.Serialize(parser.Tokens));
+        var translateJson = """
+                            [
+                              {
+                                "key": "_1",
+                                "original": "return [\"EngineerClothesAlex\", \"plainBriefs\"]",
+                                "translation": "return [\"测试\", \"测试\"]"
+                              },
+                              {
+                                "key": "_4",
+                                "original": "return [\"NpcScratch\", \"StrongBite\", \"simplekickattack\", \"HeatGrenade\", \"BolaThrow\", \"ForceBlindfoldPC\", \"trygetupattack\"]",
+                                "translation": "return [\"测试\", \"测试\", \"测试\", \"测试\", \"测试\", \"测试\", \"测试\"]"
+                              },
+                              {
+                                "key": "_7_9",
+                                "original": "Alex grunts as he gets into a fighting stance, his prosthetic spine is not meant for combat. But he seems tough even with that handicap.",
+                                "translation": "测试",
+                                "context": "return \"Alex grunts as he gets into a fighting stance, his prosthetic spine is not meant for combat. But he seems tough even with that handicap.\""
+                              },
+                              {
+                                "key": "_16_5",
+                                "original": "You can't tie me up so easily",
+                                "translation": "测试",
+                                "context": "return RNG.pick([\n\t\t\t\t\"You can't tie me up so easily\",\n\t\t\t\t\"Try harder next time\",\n\t\t\t\t\"What now?\",\n\t\t\t\t\"You can't tie up a rigger\",\n\t\t\t])"
+                              },
+                              {
+                                "key": "_17_5",
+                                "original": "Try harder next time",
+                                "translation": "测试",
+                                "context": "return RNG.pick([\n\t\t\t\t\"You can't tie me up so easily\",\n\t\t\t\t\"Try harder next time\",\n\t\t\t\t\"What now?\",\n\t\t\t\t\"You can't tie up a rigger\",\n\t\t\t])"
+                              },
+                              {
+                                "key": "_18_5",
+                                "original": "What now?",
+                                "translation": "测试",
+                                "context": "return RNG.pick([\n\t\t\t\t\"You can't tie me up so easily\",\n\t\t\t\t\"Try harder next time\",\n\t\t\t\t\"What now?\",\n\t\t\t\t\"You can't tie up a rigger\",\n\t\t\t])"
+                              },
+                              {
+                                "key": "_19_5",
+                                "original": "You can't tie up a rigger",
+                                "translation": "测试",
+                                "context": "return RNG.pick([\n\t\t\t\t\"You can't tie me up so easily\",\n\t\t\t\t\"Try harder next time\",\n\t\t\t\t\"What now?\",\n\t\t\t\t\"You can't tie up a rigger\",\n\t\t\t])"
+                              },
+                              {
+                                "key": "_23_4",
+                                "original": "I will break your toys",
+                                "translation": "测试",
+                                "context": "return RNG.pick([\n\t\t\t\"I will break your toys\",\n\t\t\t\"These can't hold me back forever\",\n\t\t])"
+                              },
+                              {
+                                "key": "_24_4",
+                                "original": "These can't hold me back forever",
+                                "translation": "测试",
+                                "context": "return RNG.pick([\n\t\t\t\"I will break your toys\",\n\t\t\t\"These can't hold me back forever\",\n\t\t])"
+                              },
+                              {
+                                "key": "_30_5",
+                                "original": "Stop with this crap",
+                                "translation": "测试",
+                                "context": "return RNG.pick([\n\t\t\t\t\"Stop with this crap\",\n\t\t\t\t\"Enough, save these for lilacs and reds\",\n\t\t\t\t\"How many more do you have?\",\n\t\t\t])"
+                              },
+                              {
+                                "key": "_31_5",
+                                "original": "Enough, save these for lilacs and reds",
+                                "translation": "测试",
+                                "context": "return RNG.pick([\n\t\t\t\t\"Stop with this crap\",\n\t\t\t\t\"Enough, save these for lilacs and reds\",\n\t\t\t\t\"How many more do you have?\",\n\t\t\t])"
+                              },
+                              {
+                                "key": "_32_5",
+                                "original": "How many more do you have?",
+                                "translation": "测试",
+                                "context": "return RNG.pick([\n\t\t\t\t\"Stop with this crap\",\n\t\t\t\t\"Enough, save these for lilacs and reds\",\n\t\t\t\t\"How many more do you have?\",\n\t\t\t])"
+                              },
+                              {
+                                "key": "_37_5",
+                                "original": "Hey! Don't fucking gag me",
+                                "translation": "测试",
+                                "context": "return RNG.pick([\n\t\t\t\t\"Hey! Don't fucking gag me\",\n\t\t\t\t\"You think gagging me will save you?\",\n\t\t\t])"
+                              },
+                              {
+                                "key": "_38_5",
+                                "original": "You think gagging me will save you?",
+                                "translation": "测试",
+                                "context": "return RNG.pick([\n\t\t\t\t\"Hey! Don't fucking gag me\",\n\t\t\t\t\"You think gagging me will save you?\",\n\t\t\t])"
+                              },
+                              {
+                                "key": "_42_5",
+                                "original": "Hey! Don't fucking muzzle me",
+                                "translation": "测试",
+                                "context": "return RNG.pick([\n\t\t\t\t\"Hey! Don't fucking muzzle me\",\n\t\t\t\t\"You think muzzling me will save you?\",\n\t\t\t])"
+                              },
+                              {
+                                "key": "_43_5",
+                                "original": "You think muzzling me will save you?",
+                                "translation": "测试",
+                                "context": "return RNG.pick([\n\t\t\t\t\"Hey! Don't fucking muzzle me\",\n\t\t\t\t\"You think muzzling me will save you?\",\n\t\t\t])"
+                              },
+                              {
+                                "key": "_47_5",
+                                "original": "Hey! Not my ass!",
+                                "translation": "测试",
+                                "context": "return RNG.pick([\n\t\t\t\t\"Hey! Not my ass!\",\n\t\t\t\t\"Don't touch my fucking ass\",\n\t\t\t])"
+                              },
+                              {
+                                "key": "_48_5",
+                                "original": "Don't touch my fucking ass",
+                                "translation": "测试",
+                                "context": "return RNG.pick([\n\t\t\t\t\"Hey! Not my ass!\",\n\t\t\t\t\"Don't touch my fucking ass\",\n\t\t\t])"
+                              },
+                              {
+                                "key": "_52_4",
+                                "original": "Hey! Restraints are my thing!",
+                                "translation": "测试",
+                                "context": "return RNG.pick([\n\t\t\t\"Hey! Restraints are my thing!\",\n\t\t\t\"The fuck are you doing?\",\n\t\t\t\"You are making me real mad\",\n\t\t\t\"You can't win like this\",\n\t\t\t\"Fight me instead of this shit\",\n\t\t\t\"Keep that shit away from me\",\n\t\t])"
+                              },
+                              {
+                                "key": "_53_4",
+                                "original": "The fuck are you doing?",
+                                "translation": "测试",
+                                "context": "return RNG.pick([\n\t\t\t\"Hey! Restraints are my thing!\",\n\t\t\t\"The fuck are you doing?\",\n\t\t\t\"You are making me real mad\",\n\t\t\t\"You can't win like this\",\n\t\t\t\"Fight me instead of this shit\",\n\t\t\t\"Keep that shit away from me\",\n\t\t])"
+                              },
+                              {
+                                "key": "_54_4",
+                                "original": "You are making me real mad",
+                                "translation": "测试",
+                                "context": "return RNG.pick([\n\t\t\t\"Hey! Restraints are my thing!\",\n\t\t\t\"The fuck are you doing?\",\n\t\t\t\"You are making me real mad\",\n\t\t\t\"You can't win like this\",\n\t\t\t\"Fight me instead of this shit\",\n\t\t\t\"Keep that shit away from me\",\n\t\t])"
+                              },
+                              {
+                                "key": "_55_4",
+                                "original": "You can't win like this",
+                                "translation": "测试",
+                                "context": "return RNG.pick([\n\t\t\t\"Hey! Restraints are my thing!\",\n\t\t\t\"The fuck are you doing?\",\n\t\t\t\"You are making me real mad\",\n\t\t\t\"You can't win like this\",\n\t\t\t\"Fight me instead of this shit\",\n\t\t\t\"Keep that shit away from me\",\n\t\t])"
+                              },
+                              {
+                                "key": "_56_4",
+                                "original": "Fight me instead of this shit",
+                                "translation": "测试",
+                                "context": "return RNG.pick([\n\t\t\t\"Hey! Restraints are my thing!\",\n\t\t\t\"The fuck are you doing?\",\n\t\t\t\"You are making me real mad\",\n\t\t\t\"You can't win like this\",\n\t\t\t\"Fight me instead of this shit\",\n\t\t\t\"Keep that shit away from me\",\n\t\t])"
+                              },
+                              {
+                                "key": "_57_4",
+                                "original": "Keep that shit away from me",
+                                "translation": "测试",
+                                "context": "return RNG.pick([\n\t\t\t\"Hey! Restraints are my thing!\",\n\t\t\t\"The fuck are you doing?\",\n\t\t\t\"You are making me real mad\",\n\t\t\t\"You can't win like this\",\n\t\t\t\"Fight me instead of this shit\",\n\t\t\t\"Keep that shit away from me\",\n\t\t])"
+                              }
+                            ]
+                            
+                            
+                            """;
+
+        var translationList = JsonConvert.DeserializeObject<List<TranslationToken>>(translateJson);
+        parser.Translate(translationList);
+        Console.WriteLine(parser.ClassDeclaration);
+    }
+    public void TestErrorFiles(string path = "output")
+    {
+        var script = """
+                     tool
+                     extends Polygon2D
+                     
+                     				
+                     func SetFlipLegPos(_newvalue):
+                     	if(color.r >= 0.99):
+                     		# was left, became right
+                     		color = Color("#AAAAAA")
+                     		global_position -= legsSwitchDifference
+                     	else:
+                     		# was right, became left
+                     		color = Color.white
+                     		global_position += legsSwitchDifference
+                     """;
+        try
+        {
+            var reader = new GDScriptReader();
+            reader.ParseFileContent(script);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+
+    }
 }

@@ -1,0 +1,6 @@
+[submodule "BDCC"]
+	path = BDCC
+	url = https://github.com/Alexofp/BDCC
+[submodule "Paratranz.NET"]
+	path = Paratranz.NET
+	url = https://github.com/Mochacola500/Paratranz.NET/

@@ -26,36 +26,14 @@ public class GDNodeInfo
         Token = TranslationToken.Create($"{prefix}_{Node.StartLine}", Node.ToString());
     }
     [JsonIgnore]
-    public GDNode           Original { get; private set; }
+    public GDNode Original { get; private set; }
     [JsonIgnore]
-    public GDNode           Node     { get; private set; }
-    public TranslationToken Token    { get; private set; }
+    public GDNode Node { get;            private set; }
+    public TranslationToken Token { get; private set; }
     [JsonIgnore]
-    public bool             IsEquals { get; private set; } = false;
+    public bool IsEquals { get; private set; } = false;
     [JsonIgnore]
     public GDScriptReader Reader { get; } = new GDScriptReader();
-    // public void SetToken(string key)
-    // {
-    //     if (IsEquals)
-    //     {
-    //         Token = TranslationToken.Create(key, Original.ToString());
-    //         // if (Original.FirstChildNode is GDReturnExpression gdReturnExpression)
-    //         // {
-    //         //     Token.Type = "Return:" + string.Join(',', gdReturnExpression.Nodes.Select(x => x.GetType().Name));
-    //         // }
-    //         // else
-    //         // {
-    //         //     Token.Type = "Child:" + string.Join(',', Original.Nodes.Select(x => x.GetType().Name));
-    //         // }
-    //         
-    //     }
-    //     else
-    //     {
-    //         Token = TranslationToken.Create(key, Node.ToString(), "", Original.ToString());
-    //         // Token.Type = "Parent:" + string.Join(',', Node.Parents.Select(x => x.GetType().Name));
-    //     }
-    //
-    // }
 
     public bool ReplaceWith(TranslationToken token)
     {
@@ -63,29 +41,47 @@ public class GDNodeInfo
         {
             return false;
         }
-        var nodeContext = Node.ToString();
-        if (token.Translation == nodeContext)
+        // var nodeContext = Node.ToString();
+        // if (token.Translation == nodeContext)
+        // {
+        //     return false;
+        // }
+        // if (token.Original != nodeContext)
+        // {
+        //     return false;
+        // }
+        GDNode newNode = default!;
+        switch (Node)
         {
-            return false;
-        }
-        if (token.Original != nodeContext)
-        {
-            return false;
-        }
+            case GDStringPartsList stringPartsList:
+                Console.WriteLine($"Treating as GDStringPartsList {token.Translation}");
+                var gdStringExpression = Reader.ParseExpression($"\"{token.Translation}\"") as GDStringExpression;
+                if (gdStringExpression!.FirstChildNode is not GDStringNode stringNode)
+                {
+                    return false;
+                }
+                newNode = stringNode.Parts;
+                
+                break;
+            case GDDualOperatorExpression or GDStringExpression or GDReturnExpression:
+                newNode = Reader.ParseExpression(token.Translation);
+                break;
 
-        return ReplaceWith(Reader.ParseExpression(token.Translation));
+        }
+        return ReplaceWith(newNode);
 
     }
     public bool ReplaceWith(GDNode newNode)
     {
-        if (!newNode.HasTokens)
-        {
-            return false;
-        }
-        if (newNode.ToString() == Node.ToString())
-        {
-            return false;
-        }
+        // if (!newNode.HasTokens)
+        // {
+        //     return false;
+        // }
+        // if (newNode.ToString() == Node.ToString())
+        // {
+        //     return false;
+        // }
+        Console.WriteLine($"Replacing {Node} with {newNode}");
         Node.Parent.Form.AddBeforeToken(newNode, Node);
         Node.RemoveFromParent();
         Node = newNode;

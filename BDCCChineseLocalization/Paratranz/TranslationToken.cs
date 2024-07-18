@@ -15,6 +15,15 @@ namespace BDCCChineseLocalization.Paratranz
                 Context = context
             };
         }
+        public static TranslationToken Create(string key, string original, string translation)
+        {
+            return new TranslationToken
+            {
+                Key = key,
+                Original = original,
+                Translation = translation,
+            };
+        }
         public static TranslationToken Create(string key, string original)
         {
             return new TranslationToken
