@@ -1,4 +1,6 @@
-﻿using GDShrapt.Reader;
+﻿using System.Security.Cryptography;
+using System.Text;
+using GDShrapt.Reader;
 using Newtonsoft.Json;
 
 namespace BDCCChineseLocalization.Paratranz;
@@ -6,24 +8,32 @@ namespace BDCCChineseLocalization.Paratranz;
 public class GDNodeInfo
 {
 
-    public GDNodeInfo(GDNode original, GDStringNode node, string? prefix)
+    public GDNodeInfo(GDNode original, GDStringNode node, string prefix,string? filepath = "")
     {
         Node = node.Parts;
         Original = original;
-        Token = TranslationToken.Create($"{prefix}_{Node.StartLine}_{Node.StartColumn}", Node.ToString(), "", Original.ToString());
+        var translationHashIndex = TranslationHashIndexFile.GetTranslationHashIndex(string.IsNullOrWhiteSpace(filepath) ? prefix : filepath);
+        prefix = translationHashIndex.GetPrefix(prefix, Original, Node);
+        Token = TranslationToken.Create(prefix, Node.ToString(), "", Original.ToString());
+        
+        
     }
-    public GDNodeInfo(GDNode original, GDNode node, string? prefix)
+    public GDNodeInfo(GDNode original, GDNode node, string prefix,string? filepath = "")
     {
         Node = node;
         Original = original;
-        Token = TranslationToken.Create($"{prefix}_{Node.StartLine}_{Node.StartColumn}", Node.ToString(), "", Original.ToString());
+        var translationHashIndex = TranslationHashIndexFile.GetTranslationHashIndex(string.IsNullOrWhiteSpace(filepath) ? prefix : filepath);
+        prefix = translationHashIndex.GetPrefix(prefix, Original, Node);
+        Token = TranslationToken.Create(prefix, Node.ToString(), "", Original.ToString());
     }
-    public GDNodeInfo(GDNode node, string? prefix)
+    public GDNodeInfo(GDNode node, string prefix,string? filepath = "")
     {
         Node = node;
         Original = node;
         IsEquals = true;
-        Token = TranslationToken.Create($"{prefix}_{Node.StartLine}", Node.ToString());
+        var translationHashIndex = TranslationHashIndexFile.GetTranslationHashIndex(string.IsNullOrWhiteSpace(filepath) ? prefix : filepath);
+        prefix = translationHashIndex.GetPrefix(prefix, Node);
+        Token = TranslationToken.Create(prefix, Node.ToString());
     }
     [JsonIgnore]
     public GDNode Original { get; private set; }
@@ -54,25 +64,32 @@ public class GDNodeInfo
         switch (Node)
         {
             case GDStringPartsList stringPartsList:
-                Console.WriteLine($"Treating as GDStringPartsList {token.Translation}");
                 var gdStringExpression = Reader.ParseExpression($"\"{token.Translation}\"") as GDStringExpression;
                 if (gdStringExpression!.FirstChildNode is not GDStringNode stringNode)
                 {
                     return false;
                 }
                 newNode = stringNode.Parts;
-                
+
                 break;
-            case GDDualOperatorExpression or GDStringExpression or GDReturnExpression:
+            case GDExpressionStatement:
                 newNode = Reader.ParseExpression(token.Translation);
                 break;
 
         }
-        return ReplaceWith(newNode);
+        if (newNode is null)
+        {
+            return false;
+        }
+        Console.WriteLine($"Replacing {Node} with {newNode}");
+        Console.WriteLine($"Type: {Node?.GetType()} -> {newNode?.GetType()}");
+
+        return ReplaceWith(newNode!);
 
     }
     public bool ReplaceWith(GDNode newNode)
     {
+
         // if (!newNode.HasTokens)
         // {
         //     return false;

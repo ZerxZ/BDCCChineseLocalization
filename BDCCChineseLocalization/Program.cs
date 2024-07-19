@@ -78,6 +78,8 @@ public class Program
         var errorFiles    = new List<ErrorFile>();
         var skippedFiles  = new List<string>();
         var completed     = 0;
+        TranslationHashIndexFile.SetDir(output);
+        TranslationHashIndexFile.Instance.Load();
         foreach (var file in files)
         {
             Console.WriteLine($"Extracting file {file}");
@@ -90,7 +92,7 @@ public class Program
                     errorFiles.Add(new ErrorFile(file, "File is banned"));
                     continue;
                 }
-                var parser = GDScriptParser.ParseFile(file, fileName);
+                var parser = GDScriptParser.ParseFile(file, Path.GetRelativePath(path, file));
                 parser.Parse();
                 if (!parser.HasTokens)
                 {
@@ -114,6 +116,7 @@ public class Program
             }
 
         }
+        TranslationHashIndexFile.Instance.Save();
         Console.WriteLine("Extraction complete, files processed: " + completed);
         var sb = new StringBuilder();
         if (errorFiles.Count > 0)
@@ -253,16 +256,16 @@ public class Program
         var script = """
                      func getDefaultEquipment():
                      	return ["EngineerClothesAlex", "plainBriefs"]
-                     
+
                      func _getAttacks():
                      	return ["NpcScratch", "StrongBite", "simplekickattack", "HeatGrenade", "BolaThrow", "ForceBlindfoldPC", "trygetupattack"]
-                     
+
                      func getFightIntro(_battleName):
                      	return "Alex grunts as he gets into a fighting stance, his prosthetic spine is not meant for combat. But he seems tough even with that handicap."
-                     
+
                      func getLootTable(_battleName):
                      	return EngineerLoot.new()
-                     
+
                      func reactRestraint(restraintType, restraintAmount, isGettingForced):
                      	if(!isGettingForced):
                      		if(restraintAmount == 0):
@@ -312,7 +315,7 @@ public class Program
                      		])
                      	return null
                      """;
-        var parser = GDScriptParser.Parse(script);
+        var parser = GDScriptParser.Parse(script, "测试");
         parser.Parse();
         Console.WriteLine(ParatranzConverter.Serialize(parser.Tokens));
         var translateJson = """
@@ -460,8 +463,8 @@ public class Program
                                 "context": "return RNG.pick([\n\t\t\t\"Hey! Restraints are my thing!\",\n\t\t\t\"The fuck are you doing?\",\n\t\t\t\"You are making me real mad\",\n\t\t\t\"You can't win like this\",\n\t\t\t\"Fight me instead of this shit\",\n\t\t\t\"Keep that shit away from me\",\n\t\t])"
                               }
                             ]
-                            
-                            
+
+
                             """;
 
         var translationList = JsonConvert.DeserializeObject<List<TranslationToken>>(translateJson);

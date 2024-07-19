@@ -2,7 +2,7 @@
 
 namespace BDCCChineseLocalization.Paratranz
 {
-    
+
     public class TranslationToken
     {
         public static TranslationToken Create(string key, string original, string translation, string? context = null)
@@ -32,13 +32,20 @@ namespace BDCCChineseLocalization.Paratranz
                 Original = original,
             };
         }
-        public        string Key         { get; set; } = string.Empty;
-        public        string Original    { get; set; } = string.Empty;
-        public        string Translation { get; set; } = string.Empty;
+        public string Key         { get; set; } = string.Empty;
+        public string Original    { get; set; } = string.Empty;
+        public string Translation { get; set; } = string.Empty;
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public string? Context     { get; set; } = null;
+        public string? Context { get; set; } = null;
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public string? Type        { get; set; } = null;
-        
+        public string? Type { get; set; } = null;
+        public string HashId => GetHashId();
+        public string GetHashId()
+        {
+            var prefix  = Key.Split('_')[0];
+            var context = Context ?? "";
+            return HashHelper.GetSha512(prefix + Original + context);
+        }
+
     }
 }
