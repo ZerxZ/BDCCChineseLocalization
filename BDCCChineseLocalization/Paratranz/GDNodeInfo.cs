@@ -14,8 +14,13 @@ public class GDNodeInfo
         Original = original;
         Token = TranslationToken.CreateToken(Node.ToString(), Original.ToString());
         Token.SetKey(prefix, hashIndex);
-
-
+    }
+    public GDNodeInfo(GDNode original, GDStringExpression node, string prefix,  TranslationHashIndex hashIndex)
+    {
+        Node = node.String.Parts;
+        Original = original;
+        Token = TranslationToken.CreateToken(Node.ToString(), Original.ToString());
+        Token.SetKey(prefix, hashIndex);
     }
     public GDNodeInfo(GDNode original, GDNode node, string prefix,  TranslationHashIndex hashIndex)
     {
