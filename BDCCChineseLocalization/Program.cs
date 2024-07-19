@@ -218,6 +218,16 @@ public class Program
         }
         var missingTranslation   = Path.Combine(currentDir, "missing");
         var completedTranslation = Path.Combine(currentDir, "completed");
+        if (Directory.Exists(missingTranslation))
+        {
+            Directory.Delete(missingTranslation, true);
+        }
+        if (Directory.Exists(completedTranslation))
+        {
+            Directory.Delete(completedTranslation, true);
+        }
+        Directory.CreateDirectory(missingTranslation);
+        Directory.CreateDirectory(completedTranslation);
         var files                = Directory.GetFiles(paratranzPath, "*.json", SearchOption.AllDirectories);
         var errorFiles           = new List<ErrorFile>();
         var completed            = 0;
@@ -244,17 +254,20 @@ public class Program
                 }
                 var translateToken = ParatranzConverter.Deserialize(await File.ReadAllTextAsync(file, cancellationToken));
                 var (missingTranslationTokens, completeTranslationTokens)       = parser.Translate(translateToken);
-                await File.WriteAllTextAsync(scriptFilePath, parser.ClassDeclaration!.ToString(), cancellationToken);
-                if (missingTranslationTokens is { Count: > 0 })
+                if (missingTranslationTokens.Count > 0)
                 {
                     ParatranzConverter.WriteFile( Path.ChangeExtension(Path.Combine(missingTranslation, Path.GetRelativePath(paratranzPath, file)), "json"), missingTranslationTokens);
                 }
-                if (completeTranslationTokens is {Count: >0})
+                if (completeTranslationTokens.Count > 0)
                 {
                     ParatranzConverter.WriteFile(Path.ChangeExtension(Path.Combine(completedTranslation, Path.GetRelativePath(paratranzPath, file)), "json"), completeTranslationTokens);
+                    await File.WriteAllTextAsync(scriptFilePath, parser.ClassDeclaration!.ToString(), cancellationToken);
+                    completed++;
                 }
+
+            
                 Console.WriteLine($"Translation complete for {file}");
-                completed++;
+               
             }
             catch (Exception e)
             {

@@ -22,6 +22,7 @@ public class GDScriptParser
     {
         var parser = new GDScriptParser();
         parser.Prefix = prefix ?? "0";
+        parser.TranslationHashIndex = TranslationHashIndexFile.GetTranslationHashIndex("0");
         parser.SetClassDeclarationContent(content);
         return parser;
     }
@@ -34,6 +35,7 @@ public class GDScriptParser
     }
     public GDScriptParser()
     {
+     
     }
     public GDScriptParser(string path)
     {
@@ -57,8 +59,8 @@ public class GDScriptParser
     }
     public string Filepath { get; private set; } = string.Empty;
     // public ulong                                    Index            { get; private set; } = 0;
-    public List<TranslationToken>                         Tokens { get; private set; } = new List<TranslationToken>(512);
-    public ConcurrentDictionary<string, List<GDNodeInfo>> Nodes  { get; private set; } = new ConcurrentDictionary<string, List<GDNodeInfo>>();
+    public          List<TranslationToken>                         Tokens { get; private set; } = new List<TranslationToken>(512);
+    public          ConcurrentDictionary<string, List<GDNodeInfo>> Nodes  { get; private set; } = new ConcurrentDictionary<string, List<GDNodeInfo>>();
     public TranslationHashIndex                           TranslationHashIndex;
     // public TranslationJson                          TranslationJson  { get; }
     public GDClassDeclaration? ClassDeclaration { get; private set; }
@@ -239,7 +241,7 @@ public class GDScriptParser
         }
 
     }
-    public (List<TranslationToken>?,List<TranslationToken>?) Translate(List<TranslationToken>? translationTokens)
+    public (List<TranslationToken>,List<TranslationToken>) Translate(List<TranslationToken>? translationTokens)
     {
         var missingTranslationTokens     = new List<TranslationToken>(512);
         var completeTranslationTokens    = new List<TranslationToken>(512);
