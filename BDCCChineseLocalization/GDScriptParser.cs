@@ -28,7 +28,7 @@ public class GDScriptParser
     public static GDScriptParser ParseFile(string path, string relativePath)
     {
         var parser = new GDScriptParser(relativePath);
-        parser.Prefix =Path.GetFileNameWithoutExtension(path);
+        parser.Prefix = Path.GetFileNameWithoutExtension(path);
         parser.SetClassDeclarationFile(path);
         return parser;
     }
@@ -38,6 +38,7 @@ public class GDScriptParser
     public GDScriptParser(string path)
     {
         Filepath = path;
+        TranslationHashIndex = TranslationHashIndexFile.GetTranslationHashIndex(Filepath);
         Prefix = Path.GetFileNameWithoutExtension(path);
     }
     public void SetClassDeclarationContent(string content)
@@ -51,12 +52,14 @@ public class GDScriptParser
     public GDScriptParser(GDClassDeclaration classDeclaration, string? prefix = default)
     {
         Prefix = prefix ?? "0";
+        TranslationHashIndex = TranslationHashIndexFile.GetTranslationHashIndex(Prefix);
         ClassDeclaration = classDeclaration;
     }
     public string Filepath { get; private set; } = string.Empty;
     // public ulong                                    Index            { get; private set; } = 0;
-    public List<TranslationToken>                   Tokens { get; private set; } = new List<TranslationToken>(512);
-    public ConcurrentDictionary<string, GDNodeInfo> Nodes  { get; private set; } = new ConcurrentDictionary<string, GDNodeInfo>();
+    public List<TranslationToken>                         Tokens { get; private set; } = new List<TranslationToken>(512);
+    public ConcurrentDictionary<string, List<GDNodeInfo>> Nodes  { get; private set; } = new ConcurrentDictionary<string, List<GDNodeInfo>>();
+    public TranslationHashIndex                           TranslationHashIndex;
     // public TranslationJson                          TranslationJson  { get; }
     public GDClassDeclaration? ClassDeclaration { get; private set; }
     public string              Prefix = string.Empty;
@@ -64,6 +67,20 @@ public class GDScriptParser
     // public string                                   Key              => HasPrefix ? $"{Prefix}_{Index}" : $"0_{Index}";
 
     public bool HasTokens => Tokens.Count > 0;
+    public void AddGDNode(GDNodeInfo node)
+    {
+        var list = new List<GDNodeInfo>();
+        if (Nodes.TryGetValue(node.Token.HashId, out list))
+        {
+            list.Add(node);
+            return;
+        }
+        list = new List<GDNodeInfo>();
+        list.Add(node);
+        Nodes.TryAdd(node.Token.HashId, list);
+        Tokens.Add(node.Token);
+
+    }
 
     public void AddToken(GDNode original)
     {
@@ -81,9 +98,9 @@ public class GDScriptParser
                         case GDArrayInitializerExpression:
                             break;
                         default:
-                            gdNodeInfo = new GDNodeInfo(original,Prefix , Filepath);
-                            Tokens.Add(gdNodeInfo.Token);
-                            Nodes.TryAdd(gdNodeInfo.Token.Key, gdNodeInfo);
+                            gdNodeInfo = new GDNodeInfo(original, Prefix, TranslationHashIndex);
+                            AddGDNode(gdNodeInfo);
+                            ;
                             return;
                     }
                     break;
@@ -150,9 +167,8 @@ public class GDScriptParser
                                         }
                                         break;
                                 }
-                                gdNodeInfo = new GDNodeInfo(original, gdDualOperatorExpression, Prefix, Filepath);
-                                Tokens.Add(gdNodeInfo.Token);
-                                Nodes.TryAdd(gdNodeInfo.Token.GetHashId(), gdNodeInfo);
+                                gdNodeInfo = new GDNodeInfo(original, gdDualOperatorExpression, Prefix, TranslationHashIndex);
+                                AddGDNode(gdNodeInfo);
                                 break;
                             case GDStringExpression gdStringExpression:
                                 switch (identifier)
@@ -170,18 +186,16 @@ public class GDScriptParser
                                         }
                                         break;
                                 }
-                                gdNodeInfo = new GDNodeInfo(original, gdStringExpression, Prefix, Filepath);
-                                Tokens.Add(gdNodeInfo.Token);
-                                Nodes.TryAdd(gdNodeInfo.Token.GetHashId(), gdNodeInfo);
+                                gdNodeInfo = new GDNodeInfo(original, gdStringExpression, Prefix, TranslationHashIndex);
+                                AddGDNode(gdNodeInfo);
                                 break;
                         }
                     }
                     return;
                 default:
                 {
-                    gdNodeInfo = new GDNodeInfo(original, Prefix, Filepath);
-                    Tokens.Add(gdNodeInfo.Token);
-                    Nodes.TryAdd(gdNodeInfo.Token.GetHashId(), gdNodeInfo);
+                    gdNodeInfo = new GDNodeInfo(original, Prefix, TranslationHashIndex);
+                    AddGDNode(gdNodeInfo);
                     return;
                 }
             }
@@ -220,28 +234,40 @@ public class GDScriptParser
             {
                 continue;
             }
-            var gdNodeInfo = new GDNodeInfo(original, gdStringNode, Prefix, Filepath);
-            Tokens.Add(gdNodeInfo.Token);
-            Nodes.TryAdd(gdNodeInfo.Token.GetHashId(), gdNodeInfo);
+            var gdNodeInfo = new GDNodeInfo(original, gdStringNode, Prefix, TranslationHashIndex);
+            AddGDNode(gdNodeInfo);
         }
 
     }
-    public void Translate(List<TranslationToken>? translationTokens)
+    public (List<TranslationToken>?,List<TranslationToken>?) Translate(List<TranslationToken>? translationTokens)
     {
-
+        var missingTranslationTokens     = new List<TranslationToken>(512);
+        var completeTranslationTokens    = new List<TranslationToken>(512);
         if (Tokens.Count == 0 || translationTokens is null or { Count: <= 0 })
         {
-            return;
+            return (missingTranslationTokens, completeTranslationTokens);
         }
-        var count = translationTokens.Count;
-        for (int i = count - 1; i >= 0; i--)
+        
+        var hashIdSet = translationTokens.ToDictionary(x => x.HashId, x => x);
+        foreach (var (hashId, gdNodeInfos) in Nodes)
         {
-            var token = translationTokens[i];
-            if (Nodes.TryGetValue(token.GetHashId(), out var gdNodeInfo))
+            if (!hashIdSet.TryGetValue(hashId, out var translationToken))
             {
-                gdNodeInfo.ReplaceWith(token);
+                var first = gdNodeInfos.First();
+                missingTranslationTokens.Add(first.Token);
+                continue;
+            }
+            if (string.IsNullOrWhiteSpace(translationToken.Translation))
+            {
+                continue;
+            }
+            completeTranslationTokens.Add(translationToken);
+            foreach (var gdNodeInfo in gdNodeInfos)
+            {
+                gdNodeInfo.ReplaceWith(translationToken);
             }
         }
+        return (missingTranslationTokens, completeTranslationTokens);
     }
     public void ParseNode(GDNode node)
     {

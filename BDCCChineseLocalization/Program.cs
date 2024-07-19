@@ -53,6 +53,7 @@ public class Program
         [Option('o', "output", Description = "输出项目路径")] string output = "Output"
     )
     {
+        var currentDir = Path.GetFullPath(".");
         // 判断是否绝对路径
         if (!Path.IsPathRooted(path))
         {
@@ -78,7 +79,7 @@ public class Program
         var errorFiles    = new List<ErrorFile>();
         var skippedFiles  = new List<string>();
         var completed     = 0;
-        TranslationHashIndexFile.SetDir(output);
+        TranslationHashIndexFile.SetDir(currentDir);
         TranslationHashIndexFile.Instance.Load();
         foreach (var file in files)
         {
@@ -152,13 +153,16 @@ public class Program
         ]
     )]
     public async Task Translate(
-        [Option('p', "path",        Description = "项目路径")]   string path        = "BDCC",
-        [Option('t', "translation", Description = "翻译项目路径")] string translation = "Output"
+        [Operand("api",         Description = "Paratranz API Key")]    string api,
+        [CommandDotNet.Operand("projectID",   Description = "Paratranz Project ID")] int    projectId,
+        [Option('i', "input",       Description = "项目路径")]                 string inputPath   = "BDCC",
+        [Option('t', "translation", Description = "翻译项目路径")]               string translation = "Output"
     )
     {
-        if (!Path.IsPathRooted(path))
+        var currentDir = Path.GetFullPath(".");
+        if (!Path.IsPathRooted(inputPath))
         {
-            path = Path.GetFullPath(path);
+            inputPath = Path.GetFullPath(inputPath);
         }
         if (!Path.IsPathRooted(translation))
         {
@@ -185,13 +189,13 @@ public class Program
         {
             File.Delete(artifactFilePath);
         }
-
-        using var       client            = new ParatranzClient("3aba7fa67ee7c371ed587ae3aeb7de63");
-        const int       projectId         = 10958;
-        var             cancellationToken = new CancellationToken();
-        var             buildInfo         = await client.BuildArtifactAsync(projectId, cancellationToken);
-        var             downloadStream    = await client.DownloadArtifactAsync(projectId, cancellationToken);
-        await using var fs                = File.Open(artifactFilePath, FileMode.Create);
+        TranslationHashIndexFile.SetDir(currentDir);
+        TranslationHashIndexFile.Instance.Load();
+        using var client            = new ParatranzClient(api);
+        var       cancellationToken = new CancellationToken();
+        await client.BuildArtifactAsync(projectId, cancellationToken);
+        var             downloadStream = await client.DownloadArtifactAsync(projectId, cancellationToken);
+        await using var fs             = File.Open(artifactFilePath, FileMode.Create);
         Console.WriteLine($"Downloading artifact to {artifactFilePath}");
         await downloadStream.CopyToAsync(fs, cancellationToken);
         fs.Close();
@@ -201,10 +205,10 @@ public class Program
         Directory.Move(extractedDirPath, paratranzPath);
 
 
-        Console.WriteLine($"Translating project at {path} with translations at {translation}");
-        if (!Directory.Exists(path))
+        Console.WriteLine($"Translating project at {inputPath} with translations at {translation}");
+        if (!Directory.Exists(inputPath))
         {
-            Console.WriteLine($"Project path {path} does not exist");
+            Console.WriteLine($"Project path {inputPath} does not exist");
             return;
         }
         if (!Directory.Exists(translation))
@@ -212,9 +216,11 @@ public class Program
             Console.WriteLine($"Translation path {translation} does not exist");
             return;
         }
-        var files      = Directory.GetFiles(paratranzPath, "*.json", SearchOption.AllDirectories);
-        var errorFiles = new List<ErrorFile>();
-        var completed  = 0;
+        var missingTranslation   = Path.Combine(currentDir, "missing");
+        var completedTranslation = Path.Combine(currentDir, "completed");
+        var files                = Directory.GetFiles(paratranzPath, "*.json", SearchOption.AllDirectories);
+        var errorFiles           = new List<ErrorFile>();
+        var completed            = 0;
         foreach (var file in files)
         {
             Console.WriteLine($"Translating file {file}");
@@ -222,16 +228,32 @@ public class Program
             {
                 var fileName = Path.GetFileNameWithoutExtension(file);
 
-                var scriptFilePath = Path.ChangeExtension(file.Replace(translation, path), "gd");
+                var scriptFilePath = Path.ChangeExtension(file.Replace(paratranzPath, inputPath), "gd");
+                Console.WriteLine($"Translating file {scriptFilePath}");
+                if (!File.Exists(scriptFilePath))
+                {
+                    errorFiles.Add(new ErrorFile(file, "Script file does not exist"));
+                    continue;
+                }
+               
                 var parser         = GDScriptParser.ParseFile(scriptFilePath, fileName);
                 parser.Parse();
                 if (!parser.HasTokens)
                 {
                     continue;
                 }
-                var translateToken = ParatranzConverter.Deserialize(File.ReadAllText(file));
-                parser.Translate(translateToken);
-                File.WriteAllText(scriptFilePath, parser.ClassDeclaration!.ToString());
+                var translateToken = ParatranzConverter.Deserialize(await File.ReadAllTextAsync(file, cancellationToken));
+                var (missingTranslationTokens, completeTranslationTokens)       = parser.Translate(translateToken);
+                await File.WriteAllTextAsync(scriptFilePath, parser.ClassDeclaration!.ToString(), cancellationToken);
+                if (missingTranslationTokens is { Count: > 0 })
+                {
+                    ParatranzConverter.WriteFile( Path.ChangeExtension(Path.Combine(missingTranslation, Path.GetRelativePath(paratranzPath, file)), "json"), missingTranslationTokens);
+                }
+                if (completeTranslationTokens is {Count: >0})
+                {
+                    ParatranzConverter.WriteFile(Path.ChangeExtension(Path.Combine(completedTranslation, Path.GetRelativePath(paratranzPath, file)), "json"), completeTranslationTokens);
+                }
+                Console.WriteLine($"Translation complete for {file}");
                 completed++;
             }
             catch (Exception e)
@@ -239,16 +261,16 @@ public class Program
                 errorFiles.Add(new ErrorFile(file, e));
             }
         }
+        TranslationHashIndexFile.Instance.Save();
         Console.WriteLine("Translation complete, files processed: " + completed);
-        if (errorFiles.Count > 0)
-        {
-            Console.WriteLine("Error files:");
-            foreach (var errorFile in errorFiles)
-            {
-                Console.WriteLine(errorFile);
-            }
-        }
-
+        // if (errorFiles.Count > 0)
+        // {
+        //     Console.WriteLine("Error files:");
+        //     foreach (var errorFile in errorFiles)
+        //     {
+        //         Console.WriteLine(errorFile);
+        //     }
+        // }
     }
 
     public void TestScript()

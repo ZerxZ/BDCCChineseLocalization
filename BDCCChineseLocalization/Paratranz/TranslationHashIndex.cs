@@ -18,12 +18,12 @@ public class TranslationHashIndex
         Indexes.TryAdd(hashId, index);
         return index;
     }
-    public string GetPrefix(string prefix, GDNode original, GDNode context)
-    {
-        return prefix + "_" + GetHashIndex(HashHelper.GetSha512(prefix + original.ToString() + context.ToString()));
-    }
-    public string GetPrefix(string prefix, GDNode original)
-    {
-        return prefix + "_" + GetHashIndex(HashHelper.GetSha512(prefix + original.ToString()));
-    }
+    // public string GetPrefix(string prefix, GDNode original, GDNode context)
+    // {
+    //     return prefix + "_" + GetHashIndex(HashHelper.GetMd5(original.ToString() + context.ToString()));
+    // }
+    // public string GetPrefix(string prefix, GDNode original)
+    // {
+    //     return prefix + "_" + GetHashIndex(HashHelper.GetMd5( original.ToString()));
+    // }
 }

@@ -8,32 +8,29 @@ namespace BDCCChineseLocalization.Paratranz;
 public class GDNodeInfo
 {
 
-    public GDNodeInfo(GDNode original, GDStringNode node, string prefix,string? filepath = "")
+    public GDNodeInfo(GDNode original, GDStringNode node, string prefix,  TranslationHashIndex hashIndex)
     {
         Node = node.Parts;
         Original = original;
-        var translationHashIndex = TranslationHashIndexFile.GetTranslationHashIndex(string.IsNullOrWhiteSpace(filepath) ? prefix : filepath);
-        prefix = translationHashIndex.GetPrefix(prefix, Original, Node);
-        Token = TranslationToken.Create(prefix, Node.ToString(), "", Original.ToString());
-        
-        
+        Token = TranslationToken.CreateToken(Node.ToString(), Original.ToString());
+        Token.SetKey(prefix, hashIndex);
+
+
     }
-    public GDNodeInfo(GDNode original, GDNode node, string prefix,string? filepath = "")
+    public GDNodeInfo(GDNode original, GDNode node, string prefix,  TranslationHashIndex hashIndex)
     {
         Node = node;
         Original = original;
-        var translationHashIndex = TranslationHashIndexFile.GetTranslationHashIndex(string.IsNullOrWhiteSpace(filepath) ? prefix : filepath);
-        prefix = translationHashIndex.GetPrefix(prefix, Original, Node);
-        Token = TranslationToken.Create(prefix, Node.ToString(), "", Original.ToString());
+        Token = TranslationToken.CreateToken(Node.ToString(), Original.ToString());
+        Token.SetKey(prefix, hashIndex);
     }
-    public GDNodeInfo(GDNode node, string prefix,string? filepath = "")
+    public GDNodeInfo(GDNode node, string prefix, TranslationHashIndex hashIndex)
     {
         Node = node;
         Original = node;
         IsEquals = true;
-        var translationHashIndex = TranslationHashIndexFile.GetTranslationHashIndex(string.IsNullOrWhiteSpace(filepath) ? prefix : filepath);
-        prefix = translationHashIndex.GetPrefix(prefix, Node);
-        Token = TranslationToken.Create(prefix, Node.ToString());
+        Token = TranslationToken.CreateToken(Node.ToString(), string.Empty);
+        Token.SetKey(prefix, hashIndex);
     }
     [JsonIgnore]
     public GDNode Original { get; private set; }

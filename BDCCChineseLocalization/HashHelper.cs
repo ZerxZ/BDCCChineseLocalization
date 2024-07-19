@@ -6,6 +6,12 @@ namespace BDCCChineseLocalization;
 public static class HashHelper
 {
     private static readonly StringBuilder StringBuilder = new StringBuilder(512);
+    public static string GetMd5(string inputString)
+    {
+        var bytes = Encoding.UTF8.GetBytes(inputString);
+        var hash  = MD5.HashData(bytes);
+        return GetStringFromHash(hash);
+    }
     public static string GetSha512(string inputString)
     {
         var bytes = Encoding.UTF8.GetBytes(inputString);

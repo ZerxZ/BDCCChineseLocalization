@@ -5,31 +5,39 @@ namespace BDCCChineseLocalization.Paratranz
 
     public class TranslationToken
     {
-        public static TranslationToken Create(string key, string original, string translation, string? context = null)
+        // public static TranslationToken Create(string key, string original, string translation, string? context = null)
+        // {
+        //     return new TranslationToken
+        //     {
+        //         Key = key,
+        //         Original = original,
+        //         Translation = translation,
+        //         Context = context
+        //     };
+        // }
+        // public static TranslationToken Create(string key, string original, string translation)
+        // {
+        //     return new TranslationToken
+        //     {
+        //         Key = key,
+        //         Original = original,
+        //         Translation = translation,
+        //     };
+        // }
+        // public static TranslationToken Create(string key, string original)
+        // {
+        //     return new TranslationToken
+        //     {
+        //         Key = key,
+        //         Original = original,
+        //     };
+        // }
+        public static TranslationToken CreateToken(string original, string content)
         {
-            return new TranslationToken
+            return new TranslationToken()
             {
-                Key = key,
                 Original = original,
-                Translation = translation,
-                Context = context
-            };
-        }
-        public static TranslationToken Create(string key, string original, string translation)
-        {
-            return new TranslationToken
-            {
-                Key = key,
-                Original = original,
-                Translation = translation,
-            };
-        }
-        public static TranslationToken Create(string key, string original)
-        {
-            return new TranslationToken
-            {
-                Key = key,
-                Original = original,
+                Context = content
             };
         }
         public string Key         { get; set; } = string.Empty;
@@ -40,12 +48,16 @@ namespace BDCCChineseLocalization.Paratranz
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string? Type { get; set; } = null;
         public string HashId => GetHashId();
+        public void SetKey(string prefix,TranslationHashIndex hashIndex)
+        {
+            Key = $"{prefix}_{hashIndex.GetHashIndex(HashId)}";
+        }
         public string GetHashId()
         {
-            var prefix  = Key.Split('_')[0];
-            var context = Context ?? "";
-            return HashHelper.GetSha512(prefix + Original + context);
+            var context = Context ?? string.Empty;
+            return HashHelper.GetMd5(Original + context);
         }
+
 
     }
 }
