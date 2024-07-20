@@ -1,78 +1,65 @@
 ﻿using System.Collections.Concurrent;
 using System.Drawing;
 using System.Reflection.Metadata;
+using System.Text;
+using System.Text.RegularExpressions;
 using BDCCChineseLocalization.Paratranz;
 using CommandDotNet.Tokens;
 using GDShrapt.Reader;
 
 namespace BDCCChineseLocalization;
 
-internal static class GDShraptExtensions
+internal static class GdShraptExtensions
 {
+    public static readonly HashSet<string> BanPath = new HashSet<string>
+    {
+        "LoadGameScreen",
+        "ModsMenu",
+        "GameUI",
+        "HK_DatapadHackComputer"
+
+    };
     public static bool HasStringNode(this GDNode node)
     {
         return node.AllNodes.OfType<GDStringNode>().Any();
     }
+    public static void InsertBeforeLine(this StringBuilder sb, string line)
+    {
+        sb.Insert(0, line + "\n");
+    }
 }
 
-public class GDScriptParser
+public partial class GdScriptParser
 {
     public GDScriptReader Reader = new GDScriptReader();
-    public static GDScriptParser Parse(string content, string? prefix = null)
+    public static GdScriptParser Parse(string content, string relativePath)
     {
-        var parser = new GDScriptParser();
-        parser.Prefix = prefix ?? "0";
-        parser.TranslationHashIndex = TranslationHashIndexFile.GetTranslationHashIndex("0");
-        parser.SetClassDeclarationContent(content);
+        var parser = new GdScriptParser(relativePath, content);
         return parser;
     }
-    public static GDScriptParser ParseFile(string path, string relativePath)
-    {
-        var parser = new GDScriptParser(relativePath);
-        parser.Prefix = Path.GetFileNameWithoutExtension(path);
-        parser.SetClassDeclarationFile(path);
-        return parser;
-    }
-    public GDScriptParser()
-    {
-     
-    }
-    public GDScriptParser(string path)
+    public GdScriptParser(string path, string content)
     {
         Filepath = path;
+        Content = content;
+
         TranslationHashIndex = TranslationHashIndexFile.GetTranslationHashIndex(Filepath);
         Prefix = Path.GetFileNameWithoutExtension(path);
     }
-    public void SetClassDeclarationContent(string content)
-    {
-        ClassDeclaration = Reader.ParseFileContent(content);
-    }
-    public void SetClassDeclarationFile(string path)
-    {
-        ClassDeclaration = Reader.ParseFile(path);
-    }
-    public GDScriptParser(GDClassDeclaration classDeclaration, string? prefix = default)
-    {
-        Prefix = prefix ?? "0";
-        TranslationHashIndex = TranslationHashIndexFile.GetTranslationHashIndex(Prefix);
-        ClassDeclaration = classDeclaration;
-    }
-    public string Filepath { get; private set; } = string.Empty;
-    // public ulong                                    Index            { get; private set; } = 0;
-    public          List<TranslationToken>                         Tokens { get; private set; } = new List<TranslationToken>(512);
-    public          ConcurrentDictionary<string, List<GDNodeInfo>> Nodes  { get; private set; } = new ConcurrentDictionary<string, List<GDNodeInfo>>();
-    public TranslationHashIndex                           TranslationHashIndex;
-    // public TranslationJson                          TranslationJson  { get; }
-    public GDClassDeclaration? ClassDeclaration { get; private set; }
-    public string              Prefix = string.Empty;
-    // public bool                                     HasPrefix        => !string.IsNullOrEmpty(Prefix);
-    // public string                                   Key              => HasPrefix ? $"{Prefix}_{Index}" : $"0_{Index}";
+    public string Filepath { get; private set; }
+    public string Prefix   { get; private set; }
+
+    public string                                         Content              { get; private set; }
+    public List<TranslationToken>                         Tokens               { get; private set; } = new List<TranslationToken>(512);
+    public ConcurrentDictionary<string, List<GDNodeInfo>> Nodes                { get; private set; } = new ConcurrentDictionary<string, List<GDNodeInfo>>();
+    public TranslationHashIndex                           TranslationHashIndex { get; private set; }
 
     public bool HasTokens => Tokens.Count > 0;
-    public void AddGDNode(GDNodeInfo node)
+
+    private static readonly char[] separator = new[] { '\n' };
+
+    public void AddGdNode(GDNodeInfo node)
     {
-        var list = new List<GDNodeInfo>();
-        if (Nodes.TryGetValue(node.Token.HashId, out list))
+        if (Nodes.TryGetValue(node.Token.HashId, out var list))
         {
             list.Add(node);
             return;
@@ -101,7 +88,7 @@ public class GDScriptParser
                             break;
                         default:
                             gdNodeInfo = new GDNodeInfo(original, Prefix, TranslationHashIndex);
-                            AddGDNode(gdNodeInfo);
+                            AddGdNode(gdNodeInfo);
                             ;
                             return;
                     }
@@ -170,7 +157,7 @@ public class GDScriptParser
                                         break;
                                 }
                                 gdNodeInfo = new GDNodeInfo(original, gdDualOperatorExpression, Prefix, TranslationHashIndex);
-                                AddGDNode(gdNodeInfo);
+                                AddGdNode(gdNodeInfo);
                                 break;
                             case GDStringExpression gdStringExpression:
                                 switch (identifier)
@@ -189,7 +176,7 @@ public class GDScriptParser
                                         break;
                                 }
                                 gdNodeInfo = new GDNodeInfo(original, gdStringExpression, Prefix, TranslationHashIndex);
-                                AddGDNode(gdNodeInfo);
+                                AddGdNode(gdNodeInfo);
                                 break;
                         }
                     }
@@ -197,7 +184,7 @@ public class GDScriptParser
                 default:
                 {
                     gdNodeInfo = new GDNodeInfo(original, Prefix, TranslationHashIndex);
-                    AddGDNode(gdNodeInfo);
+                    AddGdNode(gdNodeInfo);
                     return;
                 }
             }
@@ -237,19 +224,19 @@ public class GDScriptParser
                 continue;
             }
             var gdNodeInfo = new GDNodeInfo(original, gdStringNode, Prefix, TranslationHashIndex);
-            AddGDNode(gdNodeInfo);
+            AddGdNode(gdNodeInfo);
         }
 
     }
-    public (List<TranslationToken>,List<TranslationToken>) Translate(List<TranslationToken>? translationTokens)
+    public (List<TranslationToken>, List<TranslationToken>) Translate(List<TranslationToken>? translationTokens)
     {
-        var missingTranslationTokens     = new List<TranslationToken>(512);
-        var completeTranslationTokens    = new List<TranslationToken>(512);
+        var missingTranslationTokens  = new List<TranslationToken>(512);
+        var completeTranslationTokens = new List<TranslationToken>(512);
         if (Tokens.Count == 0 || translationTokens is null or { Count: <= 0 })
         {
             return (missingTranslationTokens, completeTranslationTokens);
         }
-        
+
         var hashIdSet = translationTokens.ToDictionary(x => x.HashId, x => x);
         foreach (var (hashId, gdNodeInfos) in Nodes)
         {
@@ -319,16 +306,135 @@ public class GDScriptParser
             }
         }
     }
-
-    public void Parse()
+    public void Parse(string content)
     {
-        if (ClassDeclaration is null)
+        if (string.IsNullOrWhiteSpace(content))
         {
             return;
         }
-        foreach (var node in ClassDeclaration.AllNodes)
+        var statementList = new List<string>();
+        var sb            = new StringBuilder();
+        // var isFilePath    = Prefix == "HK_DatapadHackComputer";
+        // var skipLineStr   = "";
+        foreach (var line in content.Split(separator).Reverse())
+        {
+            // if (string.IsNullOrWhiteSpace(line))
+            // {
+            //     continue;
+            // }
+            // var addLine  = line;
+            // var lineTrim = line.Trim();
+            // if (isFilePath )
+            // {
+            //     if (!string.IsNullOrWhiteSpace(skipLineStr))
+            //     {
+            //         if (skipLineStr  == lineTrim)
+            //         {
+            //             skipLineStr = "";
+            //         }
+            //         continue;
+            //     }
+            // }
+            if (line.StartsWith("func "))
+            {
+                if (line.StartsWith("func SetFlipLegPos("))
+                {
+
+                    sb.Clear();
+                    continue;
+                }
+                if (sb.Length > 0)
+                {
+                    sb.InsertBeforeLine(line);
+                    statementList.Add(sb.ToString());
+                    sb.Clear();
+                }
+                continue;
+            }
+            // if (isFilePath && lineTrim == "elif(_command == \"unlock\"):")
+            // {
+            //     skipLineStr = "elif(_command == \"monitor\"):";
+            // }
+            sb.InsertBeforeLine(line);
+        }
+        if (sb.Length > 0)
+        {
+            statementList.Add(sb.ToString());
+            sb.Clear();
+        }
+        statementList.Reverse();
+        for (var i = 0; i < statementList.Count; i++)
+        {
+            var statement = statementList[i];
+           
+            if (statement.Contains("JavaScript.eval("))
+            {
+                continue;
+            }
+            // Console.WriteLine(new string('=', 50));
+            // Console.WriteLine(statement);
+       
+            if (i == 0 && !statement.Contains("func "))
+            {
+                var statements = Reader.ParseFileContent(statement);
+                foreach (var gdStatement in statements.AllNodes)
+                {
+                    ParseNode(gdStatement);
+                }
+            }
+            else
+            {
+                var gdStatement = Reader.ParseStatementsList(statement);
+                if (gdStatement is null)
+                {
+                    continue;
+                }
+                foreach (var gdNode in gdStatement.AllNodes)
+                {
+
+                    try
+                    {
+                        ParseNode(gdNode);
+                    }
+                    catch (StackOverflowException e)
+                    {
+                        Console.WriteLine(statement);
+                        continue;
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        Console.WriteLine(statement);
+                    }
+
+                }
+            }
+        }
+    }
+    public void Parse()
+    {
+
+        // if (Path.GetFileName(Filepath) == "GameUI.gd")
+        // {
+        //     Console.WriteLine(Filepath);
+        //     Console.WriteLine(Prefix);
+        // }
+        if (GdShraptExtensions.BanPath.Contains(Prefix))
+        {
+            Parse(Content);
+            return;
+        }
+        var statements = Reader.ParseFileContent(Content);
+        if (statements is null)
+        {
+            return;
+        }
+
+        foreach (var node in statements.AllNodes)
         {
             ParseNode(node);
         }
     }
+
+    [GeneratedRegex(@"\b(?:yield|loadData|saveData)\b")]
+    private static partial Regex MyRegex();
 }

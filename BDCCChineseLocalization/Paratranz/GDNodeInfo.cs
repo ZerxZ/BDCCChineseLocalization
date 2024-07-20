@@ -13,6 +13,7 @@ public class GDNodeInfo
         Node = node.Parts;
         Original = original;
         Token = TranslationToken.CreateToken(Node.ToString(), Original.ToString());
+        Token.Type = Node.GetType().Name;
         Token.SetKey(prefix, hashIndex);
     }
     public GDNodeInfo(GDNode original, GDStringExpression node, string prefix,  TranslationHashIndex hashIndex)
@@ -20,6 +21,7 @@ public class GDNodeInfo
         Node = node.String.Parts;
         Original = original;
         Token = TranslationToken.CreateToken(Node.ToString(), Original.ToString());
+        Token.Type = Node.GetType().Name;
         Token.SetKey(prefix, hashIndex);
     }
     public GDNodeInfo(GDNode original, GDNode node, string prefix,  TranslationHashIndex hashIndex)
@@ -27,6 +29,7 @@ public class GDNodeInfo
         Node = node;
         Original = original;
         Token = TranslationToken.CreateToken(Node.ToString(), Original.ToString());
+        Token.Type = Node.GetType().Name;
         Token.SetKey(prefix, hashIndex);
     }
     public GDNodeInfo(GDNode node, string prefix, TranslationHashIndex hashIndex)
@@ -35,6 +38,7 @@ public class GDNodeInfo
         Original = node;
         IsEquals = true;
         Token = TranslationToken.CreateToken(Node.ToString(), string.Empty);
+        Token.Type = Node.GetType().Name;
         Token.SetKey(prefix, hashIndex);
     }
     [JsonIgnore]
