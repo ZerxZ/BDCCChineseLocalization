@@ -35,6 +35,7 @@ public class Program
 {
     private static readonly HashSet<string> BanPath = new HashSet<string>()
     {
+	    "GameUI",
         "gdunzip",
         "Polygon2dWeightsFlipper",
         "FertilityBetterOvulationV2",
@@ -53,6 +54,7 @@ public class Program
         "FetishesWithNumbers",
         "Strings",
         "AddRemoveListVarUI",
+        "CapEnergyBlast"
     };
     private static int Main(string[] args) =>
         new AppRunner<Program>().Run(args);
