@@ -184,8 +184,8 @@ public class Program
             }
 
 
-            File.WriteAllText(Path.Combine(output, "error.txt"),  sb.ToString());
-            File.WriteAllText(Path.Combine(output, "error.json"), JsonConvert.SerializeObject(errorFiles));
+            await File.WriteAllTextAsync(Path.Combine(output, "error.txt"),  sb.ToString());
+            await File.WriteAllTextAsync(Path.Combine(output, "error.json"), JsonConvert.SerializeObject(errorFiles));
         }
         if (skippedFiles.Count > 0)
         {
@@ -261,16 +261,17 @@ public class Program
         Console.WriteLine($"Translating project at {inputPath} with translations at {translation}");
         if (!Directory.Exists(inputPath))
         {
-            Console.WriteLine($"Project path {inputPath} does not exist");
+            // Console.WriteLine($"Project path {inputPath} does not exist");
             return;
         }
         if (!Directory.Exists(translation))
         {
-            Console.WriteLine($"Translation path {translation} does not exist");
+            // Console.WriteLine($"Translation path {translation} does not exist");
             return;
         }
         var missingTranslation   = Path.Combine(currentDir, "missing");
         var completedTranslation = Path.Combine(currentDir, "completed");
+        var translateCache       = Path.Combine(currentDir, "translateCache");
         if (Directory.Exists(missingTranslation))
         {
             Directory.Delete(missingTranslation, true);
@@ -279,23 +280,28 @@ public class Program
         {
             Directory.Delete(completedTranslation, true);
         }
+        if (Directory.Exists(translateCache))
+		{
+			Directory.Delete(translateCache, true);
+		}
         Directory.CreateDirectory(missingTranslation);
         Directory.CreateDirectory(completedTranslation);
+        Directory.CreateDirectory(translateCache);
         var files      = Directory.GetFiles(paratranzPath, "*.json", SearchOption.AllDirectories);
-        var errorFiles = new List<ErrorFile>();
+     
         var completed  = 0;
         foreach (var file in files)
         {
-            Console.WriteLine($"Translating file {file}");
+            // Console.WriteLine($"Translating file {file}");
             try
             {
                 var fileName = Path.GetFileNameWithoutExtension(file);
 
                 var scriptFilePath = Path.ChangeExtension(file.Replace(paratranzPath, inputPath), "gd");
-                Console.WriteLine($"Translating file {scriptFilePath}");
+                // Console.WriteLine($"Translating file {scriptFilePath}");
                 if (!File.Exists(scriptFilePath))
                 {
-                    errorFiles.Add(new ErrorFile(file, "Script file does not exist"));
+                    // errorFiles.Add(new ErrorFile(file, "Script file does not exist"));
                     continue;
                 }
 
@@ -306,25 +312,32 @@ public class Program
                     continue;
                 }
                 var translateToken = ParatranzConverter.Deserialize(await File.ReadAllTextAsync(file, cancellationToken));
-                var (missingTranslationTokens, completeTranslationTokens) = parser.Translate(translateToken);
-                if (missingTranslationTokens.Count > 0)
+                var complete       = parser.Translate(translateToken);
+                // if (missingTranslationTokens.Count > 0)
+                // {
+                //     ParatranzConverter.WriteFile(Path.ChangeExtension(Path.Combine(missingTranslation, Path.GetRelativePath(paratranzPath, file)), "json"), missingTranslationTokens);
+                // }
+                if (complete)
                 {
-                    ParatranzConverter.WriteFile(Path.ChangeExtension(Path.Combine(missingTranslation, Path.GetRelativePath(paratranzPath, file)), "json"), missingTranslationTokens);
-                }
-                if (completeTranslationTokens.Count > 0)
-                {
-                    ParatranzConverter.WriteFile(Path.ChangeExtension(Path.Combine(completedTranslation, Path.GetRelativePath(paratranzPath, file)), "json"), completeTranslationTokens);
+                    // ParatranzConverter.WriteFile(Path.ChangeExtension(Path.Combine(completedTranslation, Path.GetRelativePath(paratranzPath, file)), "json"), completeTranslationTokens);
+                    Console.WriteLine($"Translation complete for {scriptFilePath}");
+                    scriptFilePath = scriptFilePath.Replace(inputPath, translateCache);
+                    var dir = Path.GetDirectoryName(scriptFilePath)!;
+                    if (!Directory.Exists(dir))
+                    {
+	                    Directory.CreateDirectory(dir);
+                    }
                     await File.WriteAllTextAsync(scriptFilePath, parser.Content, cancellationToken);
                     completed++;
                 }
 
 
-                Console.WriteLine($"Translation complete for {file}");
+                // Console.WriteLine($"Translation complete for {file}");
 
             }
             catch (Exception e)
             {
-                errorFiles.Add(new ErrorFile(file, e));
+                // errorFiles.Add(new ErrorFile(file, e));
             }
         }
         TranslationHashIndexFile.Instance.Save();

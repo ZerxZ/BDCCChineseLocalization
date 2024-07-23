@@ -228,35 +228,46 @@ public partial class GdScriptParser
         }
 
     }
-    public (List<TranslationToken>, List<TranslationToken>) Translate(List<TranslationToken>? translationTokens)
+    public bool Translate(List<TranslationToken>? translationTokens)
     {
-        var missingTranslationTokens  = new List<TranslationToken>(512);
-        var completeTranslationTokens = new List<TranslationToken>(512);
+        // var missingTranslationTokens  = new List<TranslationToken>(512);
+        // var completeTranslationTokens = new List<TranslationToken>(512);
+        translationTokens ??= new List<TranslationToken>();
+        translationTokens = translationTokens.Where(x => !string.IsNullOrWhiteSpace(x.Translation)).ToList();
         if (Tokens.Count == 0 || translationTokens is null or { Count: <= 0 })
         {
-            return (missingTranslationTokens, completeTranslationTokens);
+            return false;
         }
-
+        var complete = false;
+        var sb        = new StringBuilder(Content);
         var hashIdSet = translationTokens.ToDictionary(x => x.HashId, x => x);
         foreach (var (hashId, gdNodeInfos) in Nodes)
         {
             if (!hashIdSet.TryGetValue(hashId, out var translationToken))
             {
                 var first = gdNodeInfos.First();
-                missingTranslationTokens.Add(first.Token);
+                // missingTranslationTokens.Add(first.Token);
                 continue;
             }
-            if (string.IsNullOrWhiteSpace(translationToken.Translation))
+            if (string.IsNullOrWhiteSpace(translationToken.Translation) || translationToken.Translation == translationToken.Original)
             {
                 continue;
             }
-            completeTranslationTokens.Add(translationToken);
-            foreach (var gdNodeInfo in gdNodeInfos)
-            {
-                gdNodeInfo.ReplaceWith(translationToken);
-            }
+            // completeTranslationTokens.Add(translationToken);
+            var gdNodeInfo = gdNodeInfos.First();
+            sb = gdNodeInfo.Node is GDStringPartsList ? sb.Replace($"\"{translationToken.Original}\"", $"\"{translationToken.Translation}\"") : sb.Replace(translationToken.Original, translationToken.Translation);
+            complete = true;
+
         }
-        return (missingTranslationTokens, completeTranslationTokens);
+        if (complete)
+        {
+            Content = sb.ToString();
+          
+            sb.Clear();
+            // Console.WriteLine(Content);
+
+        }
+        return complete;
     }
     public void ParseNode(GDNode node)
     {
@@ -366,14 +377,14 @@ public partial class GdScriptParser
         for (var i = 0; i < statementList.Count; i++)
         {
             var statement = statementList[i];
-           
+
             if (statement.Contains("JavaScript.eval("))
             {
                 continue;
             }
             // Console.WriteLine(new string('=', 50));
             // Console.WriteLine(statement);
-       
+
             if (i == 0 && !statement.Contains("func "))
             {
                 var statements = Reader.ParseFileContent(statement);
