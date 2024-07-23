@@ -19,11 +19,19 @@ public class TranslationHashIndex
         Indexes.TryAdd(hashId, index);
         return index;
     }
+    public void ClearPosition()
+    {
+        TokenPostion.Clear();
+    }
     public ulong GetHashIndex(TranslationToken token)
     {
 
-        if (TokenPostion.TryUpdate(token.HashId, token.Nodes, token.Nodes))
+        if (TokenPostion.TryGetValue(token.HashId, out var nodes))
         {
+            if (token.Nodes != nodes)
+            {
+                nodes.AddRange(token.Nodes);
+            }
         }
         else
         {

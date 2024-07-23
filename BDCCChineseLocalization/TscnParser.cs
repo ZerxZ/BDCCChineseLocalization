@@ -33,7 +33,6 @@ public partial class TscnParser
                 // Console.WriteLine(match.Groups[2].Value);
                 var text  = match.Groups[2].Value;
                 var token = TranslationToken.CreateToken(text, line);
-                token.SetKey(Filepath, TranslationHashIndex);
                 token.Nodes.Add(new TokenPosition
                 {
                     StartLine   = i,
@@ -41,6 +40,8 @@ public partial class TscnParser
                     StartColumn = match.Groups[2].Index,
                     EndColumn   = match.Groups[2].Index + match.Groups[2].Length
                 });
+                token.SetKey(Filepath, TranslationHashIndex);
+              
                 Tokens.Add(token);
             }
         }

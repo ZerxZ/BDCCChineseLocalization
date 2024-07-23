@@ -96,7 +96,7 @@ public class Program
             Directory.CreateDirectory(output);
         }
         var paratranzPath = Path.Combine(output, "paratranz");
-        var tscnDirPath   = Path.Combine(output, "tscn");
+        // var tscnDirPath   = Path.Combine(output, "tscn");
         var gdFiles       = Directory.GetFiles(path, "*.gd",   SearchOption.AllDirectories);
         var tscnFiles     = Directory.GetFiles(path, "*.tscn", SearchOption.AllDirectories);
 
@@ -148,13 +148,14 @@ public class Program
             try
             {
                 var fileName = Path.GetFileNameWithoutExtension(tscnFile);
-                var parser   = new TscnParser(await File.ReadAllTextAsync(tscnFile), tscnFile);
+            
+                var parser   = new TscnParser(await File.ReadAllTextAsync(tscnFile),     Path.GetRelativePath(path, tscnFile));
                 parser.Parse();
                 if (!parser.HasTokens)
                 {
                     continue;
                 }
-                var paratranzFilePath  = Path.ChangeExtension(tscnFile.Replace(path, tscnDirPath), "json");
+                var paratranzFilePath  = Path.ChangeExtension(tscnFile.Replace(path, paratranzPath), "tscn.json");
                 var paratranzDirectory = Path.GetDirectoryName(paratranzFilePath)!;
                 if (!Directory.Exists(paratranzDirectory))
                 {

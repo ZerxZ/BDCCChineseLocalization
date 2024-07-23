@@ -25,7 +25,7 @@ public class TranslationHashIndexFile
     public void Save()
     {
         var path = Path.Combine(Dir, FileName);
-        var json = JsonConvert.SerializeObject(Files, Formatting.Indented);
+        var json = JsonConvert.SerializeObject(Files, Formatting.None);
         File.WriteAllText(path, json);
     }
     public void Load()
@@ -38,6 +38,16 @@ public class TranslationHashIndexFile
         }
         var json = File.ReadAllText(path);
         Files = JsonConvert.DeserializeObject<ConcurrentDictionary<string, TranslationHashIndex>>(json) ?? new ConcurrentDictionary<string, TranslationHashIndex>();
+        
+        foreach (var (key,translationHashIndex) in Files)
+        {
+            if (key.StartsWith(Dir) || Path.GetExtension(key) is not ".tscn" and not ".gd")
+            {
+                Files.TryRemove(key, out _);
+                continue;
+            }
+            translationHashIndex.ClearPosition();
+        }
     }
 
     public ulong GetFileHashIndex(string path, TranslationToken token)
