@@ -46,11 +46,13 @@ namespace BDCCChineseLocalization.Paratranz
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string? Context { get; set; } = null;
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public string? Type { get; set; } = null;
-        public string HashId => GetHashId();
+        public string? Type { get;            set; } = null;
+        [JsonIgnore]
+        public List<TokenPosition> Nodes { get; set; } = new List<TokenPosition>();
+        public string           HashId => GetHashId();
         public void SetKey(string prefix,TranslationHashIndex hashIndex)
         {
-            Key = $"{prefix}_{hashIndex.GetHashIndex(HashId)}";
+            Key = $"{prefix}_{hashIndex.GetHashIndex(this)}";
         }
         public string GetHashId()
         {

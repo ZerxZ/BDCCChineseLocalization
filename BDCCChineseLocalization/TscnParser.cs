@@ -22,17 +22,25 @@ public partial class TscnParser
     public bool HasTokens => Tokens.Count > 0;
     public void Parse()
     {
-        var lines = Content.Replace("\r\n","\n").Split('\n').Reverse();
+        var lines = Content.Replace("\r\n","\n").Split('\n');
         var regex = GetTextRegex();
-        foreach (var line in lines)
+        for (int i = 0; i < lines.Length; i++)
         {
+            var line  = lines[i];
             var match = regex.Match(line);
             if (match.Success)
             {
-                Console.WriteLine(match.Groups[2].Value);
-                var text = match.Groups[2].Value;
+                // Console.WriteLine(match.Groups[2].Value);
+                var text  = match.Groups[2].Value;
                 var token = TranslationToken.CreateToken(text, line);
                 token.SetKey(Filepath, TranslationHashIndex);
+                token.Nodes.Add(new TokenPosition
+                {
+                    StartLine   = i,
+                    EndLine     = i,
+                    StartColumn = match.Groups[2].Index,
+                    EndColumn   = match.Groups[2].Index + match.Groups[2].Length
+                });
                 Tokens.Add(token);
             }
         }

@@ -5,31 +5,32 @@ using Newtonsoft.Json;
 
 namespace BDCCChineseLocalization.Paratranz;
 
+
 public class GDNodeInfo
 {
 
-    public GDNodeInfo(GDNode original, GDStringNode node, string prefix,  TranslationHashIndex hashIndex)
+    public GDNodeInfo(GDNode original, GDStringNode node, string prefix, TranslationHashIndex hashIndex)
     {
         Node = node.Parts;
         Original = original;
         Token = TranslationToken.CreateToken(Node.ToString(), Original.ToString());
-        Token.Type = Node.GetType().Name;
+        // Token.Type = Node.GetType().Name;
         Token.SetKey(prefix, hashIndex);
     }
-    public GDNodeInfo(GDNode original, GDStringExpression node, string prefix,  TranslationHashIndex hashIndex)
+    public GDNodeInfo(GDNode original, GDStringExpression node, string prefix, TranslationHashIndex hashIndex)
     {
         Node = node.String.Parts;
         Original = original;
         Token = TranslationToken.CreateToken(Node.ToString(), Original.ToString());
-        Token.Type = Node.GetType().Name;
+        // Token.Type = Node.GetType().Name;
         Token.SetKey(prefix, hashIndex);
     }
-    public GDNodeInfo(GDNode original, GDNode node, string prefix,  TranslationHashIndex hashIndex)
+    public GDNodeInfo(GDNode original, GDNode node, string prefix, TranslationHashIndex hashIndex)
     {
         Node = node;
         Original = original;
         Token = TranslationToken.CreateToken(Node.ToString(), Original.ToString());
-        Token.Type = Node.GetType().Name;
+        // Token.Type = Node.GetType().Name;
         Token.SetKey(prefix, hashIndex);
     }
     public GDNodeInfo(GDNode node, string prefix, TranslationHashIndex hashIndex)
@@ -38,7 +39,7 @@ public class GDNodeInfo
         Original = node;
         IsEquals = true;
         Token = TranslationToken.CreateToken(Node.ToString(), string.Empty);
-        Token.Type = Node.GetType().Name;
+        // Token.Type = Node.GetType().Name;
         Token.SetKey(prefix, hashIndex);
     }
     [JsonIgnore]
@@ -50,6 +51,10 @@ public class GDNodeInfo
     public bool IsEquals { get; private set; } = false;
     [JsonIgnore]
     public GDScriptReader Reader { get; } = new GDScriptReader();
+    public int StartLine   => Node.StartLine;
+    public int EndLine     => Node.EndLine;
+    public int StartColumn => Node.StartColumn;
+    public int EndColumn   => Node.EndColumn;
 
     public bool ReplaceWith(TranslationToken token)
     {
@@ -95,6 +100,7 @@ public class GDNodeInfo
     }
     public bool ReplaceWith(GDNode newNode)
     {
+        
 
         // if (!newNode.HasTokens)
         // {

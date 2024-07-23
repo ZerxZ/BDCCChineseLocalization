@@ -51,6 +51,7 @@ public partial class GdScriptParser
     public string                                         Content              { get; private set; }
     public List<TranslationToken>                         Tokens               { get; private set; } = new List<TranslationToken>(512);
     public ConcurrentDictionary<string, List<GDNodeInfo>> Nodes                { get; private set; } = new ConcurrentDictionary<string, List<GDNodeInfo>>();
+    public ConcurrentDictionary<string, TranslationToken> TokensDictionary     { get; private set; } = new ConcurrentDictionary<string, TranslationToken>();
     public TranslationHashIndex                           TranslationHashIndex { get; private set; }
 
     public bool HasTokens => Tokens.Count > 0;
@@ -62,10 +63,30 @@ public partial class GdScriptParser
         if (Nodes.TryGetValue(node.Token.HashId, out var list))
         {
             list.Add(node);
+            if (TokensDictionary.TryGetValue(node.Token.HashId , out var token))
+            {
+                token.Nodes.Add(new TokenPosition()
+                {
+                    StartLine =  node.StartLine,
+                    EndLine = node.EndLine,
+                    StartColumn = node.StartColumn,
+                    EndColumn = node.EndColumn
+                });
+            }
             return;
         }
-        list = new List<GDNodeInfo>();
-        list.Add(node);
+        list = new List<GDNodeInfo>
+        {
+            node
+        };
+        node.Token.Nodes.Add(new TokenPosition()
+        {
+            StartLine =  node.StartLine,
+            EndLine = node.EndLine,
+            StartColumn = node.StartColumn,
+            EndColumn = node.EndColumn
+        });
+        TokensDictionary.TryAdd(node.Token.HashId, node.Token);
         Nodes.TryAdd(node.Token.HashId, list);
         Tokens.Add(node.Token);
 

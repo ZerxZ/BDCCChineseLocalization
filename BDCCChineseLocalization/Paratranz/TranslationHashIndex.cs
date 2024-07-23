@@ -5,9 +5,10 @@ namespace BDCCChineseLocalization.Paratranz;
 
 public class TranslationHashIndex
 {
-    public ulong                               Index                                { get; set; } = 0;
-    public ConcurrentDictionary<string, ulong> Indexes                              { get; set; } = new ConcurrentDictionary<string, ulong>();
-    public ulong                               GetHashIndex(TranslationToken token) => GetHashIndex(token.HashId);
+    public ulong                                             Index        { get; set; } = 0;
+    public ConcurrentDictionary<string, ulong>               Indexes      { get; set; } = new ConcurrentDictionary<string, ulong>();
+    public ConcurrentDictionary<string, List<TokenPosition>> TokenPostion { get; set; } = new ConcurrentDictionary<string, List<TokenPosition>>();
+    // public ulong                                             GetHashIndex(TranslationToken token) => GetHashIndex(token.HashId);
     public ulong GetHashIndex(string hashId)
     {
         if (Indexes.TryGetValue(hashId, out var index))
@@ -17,6 +18,18 @@ public class TranslationHashIndex
         index = Index++;
         Indexes.TryAdd(hashId, index);
         return index;
+    }
+    public ulong GetHashIndex(TranslationToken token)
+    {
+
+        if (TokenPostion.TryUpdate(token.HashId, token.Nodes, token.Nodes))
+        {
+        }
+        else
+        {
+            TokenPostion.TryAdd(token.HashId, token.Nodes);
+        }
+        return GetHashIndex(token.HashId);
     }
     // public string GetPrefix(string prefix, GDNode original, GDNode context)
     // {

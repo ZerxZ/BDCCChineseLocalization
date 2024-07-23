@@ -142,6 +142,7 @@ public class Program
             }
 
         }
+        
         foreach (var tscnFile in tscnFiles)
         {
             try
