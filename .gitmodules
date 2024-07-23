@@ -4,3 +4,6 @@
 [submodule "Paratranz.NET"]
 	path = Paratranz.NET
 	url = https://github.com/Mochacola500/Paratranz.NET/
+[submodule "BDCC-Localization-Replacer"]
+	path = BDCC-Localization-Replacer
+	url = https://github.com/HCPTangHY/BDCC-Localization-Replacer/
