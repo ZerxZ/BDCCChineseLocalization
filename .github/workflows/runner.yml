@@ -25,6 +25,7 @@ jobs:
         with:
           dotnet-version: "8.0.x"
           cache: true
+          cache-dependency-path: ${{ env.NUGET_PACKAGES }}
       - run: dotnet restore --locked-mode
       - name: Run translation
         run: dotnet run --project BDCCChineseLocalization Translate ${{ env.PARATRANZ_TOKEN }} ${{ env.PARATRANZ_PROJECT }}
