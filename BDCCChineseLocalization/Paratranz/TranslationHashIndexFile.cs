@@ -21,6 +21,7 @@ public class TranslationHashIndexFile
     }
     public string                                             Dir      { get; set; } = string.Empty;
     public string                                             FileName { get; }      = "hash_index.json";
+    public string                                             FilePath => Path.Combine(Dir, FileName);
     public ConcurrentDictionary<string, TranslationHashIndex> Files    { get; set; } = new ConcurrentDictionary<string, TranslationHashIndex>();
     public void Save()
     {
@@ -38,8 +39,8 @@ public class TranslationHashIndexFile
         }
         var json = File.ReadAllText(path);
         Files = JsonConvert.DeserializeObject<ConcurrentDictionary<string, TranslationHashIndex>>(json) ?? new ConcurrentDictionary<string, TranslationHashIndex>();
-        
-        foreach (var (key,translationHashIndex) in Files)
+
+        foreach (var (key, translationHashIndex) in Files)
         {
             if (key.StartsWith(Dir) || Path.GetExtension(key) is not ".tscn" and not ".gd")
             {

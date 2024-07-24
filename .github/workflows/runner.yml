@@ -12,18 +12,29 @@ env:
   GODOT_VERSION: "3.5.2"
   PARATRANZ_TOKEN: ${{ secrets.PARATRANZ_TOKEN }}
   PARATRANZ_PROJECT: ${{ secrets.PARATRANZ_PROJECT }}
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
   
 jobs:
-  display-variables:
-    name: Test Variables
-    # You can use configuration variables with the `vars` context for dynamic jobs
+  translate:
+    name: 🌐 Translate
     runs-on: ubuntu-latest
     steps:
-      - name: Use variables
-        run: |
-          echo "variable from shell environment : $env_var"
-          echo "PARATRANZ_PROJECT : $PARATRANZ_PROJECT"
-          echo "PARATRANZ_TOKEN : $PARATRANZ_TOKEN"
-          echo "GODOT_VERSION : $GODOT_VERSION"
+      - uses: actions/checkout@v4
+      - name: Set up .NET Sdk
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+          cache: true
+      - run: dotnet restore --locked-mode
+      - name: Run translation
+        run: dotnet run --project BDCCChineseLocalization Translate ${{ env.PARATRANZ_TOKEN }} ${{ env.PARATRANZ_PROJECT }}
+      - name: Upload translation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bdcc-chinese-translation
+          path: ./BdccChineseLocalization.zip
+          retention-days: 7
+          
+    
 
   

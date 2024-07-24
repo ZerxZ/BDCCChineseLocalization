@@ -229,11 +229,8 @@ public class Program
             translation = Path.GetFullPath(translation);
         }
 
-        var paratranzPath = Path.GetFullPath("Paratranz");
-        if (Directory.Exists(paratranzPath))
-        {
-            Directory.Delete(paratranzPath, true);
-        }
+        var bdccLocalizationReplacerPath = Path.GetFullPath("BDCC-Localization-Replacer");
+
 
         var artifactDirPath  = Path.GetFullPath("Artifact");
         var artifactFilePath = Path.Combine(artifactDirPath, "artifact.zip");
@@ -249,8 +246,8 @@ public class Program
         {
             File.Delete(artifactFilePath);
         }
-        TranslationHashIndexFile.SetDir(currentDir);
-        TranslationHashIndexFile.Instance.Load();
+        // TranslationHashIndexFile.SetDir(currentDir);
+        // TranslationHashIndexFile.Instance.Load();
         using var client            = new ParatranzClient(api);
         var       cancellationToken = new CancellationToken();
         await client.BuildArtifactAsync(projectId, cancellationToken);
@@ -260,105 +257,42 @@ public class Program
         await downloadStream.CopyToAsync(fs, cancellationToken);
         fs.Close();
         downloadStream.Close();
-        ZipFile.ExtractToDirectory(artifactFilePath, artifactDirPath);
-        var extractedDirPath = Path.Combine(artifactDirPath, "utf8");
-        Directory.Move(extractedDirPath, paratranzPath);
 
 
-        Console.WriteLine($"Translating project at {inputPath} with translations at {translation}");
         if (!Directory.Exists(inputPath))
         {
-            // Console.WriteLine($"Project path {inputPath} does not exist");
+            Console.WriteLine($"Project path {inputPath} does not exist");
             return;
         }
         if (!Directory.Exists(translation))
         {
-            // Console.WriteLine($"Translation path {translation} does not exist");
+            Console.WriteLine($"Translation path {translation} does not exist");
             return;
         }
-        var missingTranslation   = Path.Combine(currentDir, "missing");
-        var completedTranslation = Path.Combine(currentDir, "completed");
-        var translateCache       = Path.Combine(currentDir, "translateCache");
-        if (Directory.Exists(missingTranslation))
-        {
-            Directory.Delete(missingTranslation, true);
-        }
-        if (Directory.Exists(completedTranslation))
-        {
-            Directory.Delete(completedTranslation, true);
-        }
-        if (Directory.Exists(translateCache))
-        {
-            Directory.Delete(translateCache, true);
-        }
-        Directory.CreateDirectory(missingTranslation);
-        Directory.CreateDirectory(completedTranslation);
-        Directory.CreateDirectory(translateCache);
-        var files = Directory.GetFiles(paratranzPath, "*.json", SearchOption.AllDirectories);
-
-        var completed = 0;
-        foreach (var file in files)
-        {
-            // Console.WriteLine($"Translating file {file}");
-            try
-            {
-                var fileName = Path.GetFileNameWithoutExtension(file);
-
-                var scriptFilePath = Path.ChangeExtension(file.Replace(paratranzPath, inputPath), "gd");
-                // Console.WriteLine($"Translating file {scriptFilePath}");
-                if (!File.Exists(scriptFilePath))
-                {
-                    // errorFiles.Add(new ErrorFile(file, "Script file does not exist"));
-                    continue;
-                }
-
-                var parser = GdScriptParser.Parse(await File.ReadAllTextAsync(scriptFilePath, cancellationToken), fileName);
-                parser.Parse();
-                if (!parser.HasTokens)
-                {
-                    continue;
-                }
-                var translateToken = ParatranzConverter.Deserialize(await File.ReadAllTextAsync(file, cancellationToken));
-                var complete       = parser.Translate(translateToken);
-                // if (missingTranslationTokens.Count > 0)
-                // {
-                //     ParatranzConverter.WriteFile(Path.ChangeExtension(Path.Combine(missingTranslation, Path.GetRelativePath(paratranzPath, file)), "json"), missingTranslationTokens);
-                // }
-                if (complete)
-                {
-                    // ParatranzConverter.WriteFile(Path.ChangeExtension(Path.Combine(completedTranslation, Path.GetRelativePath(paratranzPath, file)), "json"), completeTranslationTokens);
-                    Console.WriteLine($"Translation complete for {scriptFilePath}");
-                    scriptFilePath = scriptFilePath.Replace(inputPath, translateCache);
-                    var dir = Path.GetDirectoryName(scriptFilePath)!;
-                    if (!Directory.Exists(dir))
-                    {
-                        Directory.CreateDirectory(dir);
-                    }
-                    await File.WriteAllTextAsync(scriptFilePath, parser.Content, cancellationToken);
-                    completed++;
-                }
-
-
-                // Console.WriteLine($"Translation complete for {file}");
-
-            }
-            catch (Exception e)
-            {
-                // errorFiles.Add(new ErrorFile(file, e));
-            }
-        }
-        TranslationHashIndexFile.Instance.Save();
-        Console.WriteLine("Translation complete, files processed: " + completed);
-        // if (errorFiles.Count > 0)
-        // {
-        //     Console.WriteLine("Error files:");
-        //     foreach (var errorFile in errorFiles)
-        //     {
-        //         Console.WriteLine(errorFile);
-        //     }
-        // }
+        ZipFile.ExtractToDirectory(artifactFilePath, artifactDirPath);
+        var extractedDirPath = Path.Combine(artifactDirPath, "utf8");
+        
+        await CopyFilesAsync(extractedDirPath, Path.Combine(bdccLocalizationReplacerPath, "trans"));
+        await CopyFilesAsync(inputPath, Path.Combine(bdccLocalizationReplacerPath, "source"));
+        
+        TranslationHashIndexFile.SetDir(currentDir);
+        await using var sourceStream      = File.Open(TranslationHashIndexFile.Instance.FilePath, FileMode.Open);
+        await using var destinationStream = File.Create(Path.Combine(bdccLocalizationReplacerPath, Path.GetFileName(TranslationHashIndexFile.Instance.FilePath)));
+        await sourceStream.CopyToAsync(destinationStream, cancellationToken);
+        
+        await PythonTranslateReplace();
+        ZipFile.CreateFromDirectory(Path.Combine(bdccLocalizationReplacerPath, "output"), Path.Combine(currentDir, "BdccChineseLocalization.zip"));
     }
+    public async Task CopyFilesAsync(string startDirectory, string endDirectory)
+    {
 
+        foreach (var filename in Directory.EnumerateFiles(startDirectory))
+        {
+            await using var sourceStream      = File.Open(filename, FileMode.Open);
+            await using var destinationStream = File.Create(Path.Combine(endDirectory, Path.GetFileName(filename)));
+            await sourceStream.CopyToAsync(destinationStream);
+        }
+    }
     public async Task TestTscn([Option('i', "input", Description = "项目路径")] string inputPath = "BDCC")
     {
         if (!Path.IsPathRooted(inputPath))
@@ -380,13 +314,11 @@ public class Program
         }
 
     }
-
-    public async Task TestScript()
+    public async Task PythonTranslateReplace()
     {
-        // Installer.InstallPath = Path.GetFullPath("Python");
         await Installer.SetupPython(true);
         var requirements = (await File.ReadAllTextAsync(Path.GetFullPath("BDCC-Localization-Replacer/requirements.txt"))).Replace("\r\n", "\n").Split("\n");
-        foreach (var requirement in requirements.Where(x => !string.IsNullOrWhiteSpace(x) && !x.StartsWith("#")))
+        foreach (var requirement in requirements.Where(x => !string.IsNullOrWhiteSpace(x) && !x.StartsWith($"#")))
         {
             if (requirement.Contains("==") || requirement.Contains(">=") || requirement.Contains("<="))
             {
@@ -408,11 +340,7 @@ public class Program
         }
         PythonEngine.Initialize();
         PythonEngine.BeginAllowThreads();
-        PythonEngine.PythonPath += ";" + Path.GetFullPath("BDCC-Localization-Replacer");
-        Console.WriteLine(PythonEngine.PythonPath);
-        var src     = Path.GetFullPath("BDCC-Localization-Replacer/src/replacer.py");
-        var mainSrc = Path.GetFullPath("BDCC-Localization-Replacer/main.py");
-        Environment.SetEnvironmentVariable("BDDC_DIR", Path.GetFullPath("BDCC"));
+        var buildSrc = Path.GetFullPath("BDCC-Localization-Replacer/main.py");
         using (Py.GIL())
         {
 
@@ -421,16 +349,19 @@ public class Program
             dynamic os  = Py.Import("os");
             dynamic sys = Py.Import("sys");
             // // Console.WriteLine(os.path.dirname(os.path.expanduser(filePath)));
-            sys.path.append(os.path.dirname(os.path.expanduser(src)));
-            sys.path.append(os.path.dirname(os.path.expanduser(mainSrc)));
+            sys.path.append(os.path.dirname(os.path.expanduser(buildSrc)));
             // main.Invoke();
             // Console.WriteLine(sys.path);
-            var fromFile = Py.Import("main");
+            var fromFile = Py.Import(Path.GetFileNameWithoutExtension(buildSrc));
             //
             fromFile.InvokeMethod("main");
         }
         // PythonEngine.Shutdown();
         Console.WriteLine("Done");
+    }
+    public async Task TestScript()
+    {
+        // await PythonTranslateReplace("paratranz", "bdcc");
     }
     public async Task TestErrorFiles(string path = "output")
     {
