@@ -12,7 +12,6 @@ env:
   GODOT_VERSION: "3.5.2"
   PARATRANZ_TOKEN: ${{ secrets.PARATRANZ_TOKEN }}
   PARATRANZ_PROJECT: ${{ secrets.PARATRANZ_PROJECT }}
-  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
   
 jobs:
   translate:
@@ -24,9 +23,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
-          cache: true
-          cache-dependency-path: ${{ env.NUGET_PACKAGES }}
-      - run: dotnet restore --locked-mode
       - name: Run translation
         run: dotnet run --project BDCCChineseLocalization Translate ${{ env.PARATRANZ_TOKEN }} ${{ env.PARATRANZ_PROJECT }}
       - name: Upload translation artifact
