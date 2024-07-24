@@ -19,9 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check Submodules
-        run: actions/checkout@v4
+        uses: actions/checkout@v4
         with: 
-            submodules: true
+            submodules: recursive
       
       - name: Set up .NET Sdk
         uses: actions/setup-dotnet@v4
