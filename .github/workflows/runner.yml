@@ -43,7 +43,7 @@ jobs:
     name: 🏗️ Build
     runs-on: ubuntu-latest
     container:
-      image: godotengine/godot-builds:3.5.2
+      image: barichello/godot-ci:3.5.3
     steps:
       - name: Download translation artifact
         uses: actions/download-artifact@v4
@@ -62,7 +62,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: godot-windows
-          path: ./build/windows
+          name: bdcc-windows
+          path: ./build/windows/
           retention-days: 7
           
