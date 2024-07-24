@@ -11,7 +11,7 @@ permissions: write-all
 env:
   GODOT_VERSION: "3.5.2"
   PARATRANZ_TOKEN: ${{ secrets.PARATRANZ_TOKEN }}
-  PARATRANZ_PROJECT: ${{ vars.PARATRANZ_PROJECT }}
+  PARATRANZ_PROJECT: ${{ secrets.PARATRANZ_PROJECT }}
   
 jobs:
   display-variables:
@@ -23,6 +23,7 @@ jobs:
         run: |
           echo "variable from shell environment : $env_var"
           echo "PARATRANZ_PROJECT : $PARATRANZ_PROJECT"
+          echo "PARATRANZ_TOKEN : $PARATRANZ_TOKEN"
           echo "GODOT_VERSION : $GODOT_VERSION"
 
   
