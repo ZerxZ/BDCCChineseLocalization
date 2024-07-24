@@ -215,8 +215,8 @@ public class Program
         [Operand("api", Description = "Paratranz API Key")] string api,
         [CommandDotNet.Operand("projectID", Description = "Paratranz Project ID")]
         int projectId,
-        [Option('i', "input",       Description = "项目路径")]   string inputPath   = "BDCC",
-        [Option('t', "translation", Description = "翻译项目路径")] string translation = "Output"
+        [Option('i', "input", Description = "项目路径")] string inputPath = "BDCC"
+        //, [Option('t', "translation", Description = "翻译项目路径")] string translation = "Output"
     )
     {
         var currentDir = Path.GetFullPath(".");
@@ -224,10 +224,10 @@ public class Program
         {
             inputPath = Path.GetFullPath(inputPath);
         }
-        if (!Path.IsPathRooted(translation))
-        {
-            translation = Path.GetFullPath(translation);
-        }
+        // if (!Path.IsPathRooted(translation))
+        // {
+        //     translation = Path.GetFullPath(translation);
+        // }
 
         var bdccLocalizationReplacerPath = Path.GetFullPath("BDCC-Localization-Replacer");
 
@@ -264,22 +264,22 @@ public class Program
             Console.WriteLine($"Project path {inputPath} does not exist");
             return;
         }
-        if (!Directory.Exists(translation))
-        {
-            Console.WriteLine($"Translation path {translation} does not exist");
-            return;
-        }
+        // if (!Directory.Exists(translation))
+        // {
+        //     Console.WriteLine($"Translation path {translation} does not exist");
+        //     return;
+        // }
         ZipFile.ExtractToDirectory(artifactFilePath, artifactDirPath);
         var extractedDirPath = Path.Combine(artifactDirPath, "utf8");
-        
+
         await CopyFilesAsync(extractedDirPath, Path.Combine(bdccLocalizationReplacerPath, "trans"));
-        await CopyFilesAsync(inputPath, Path.Combine(bdccLocalizationReplacerPath, "source"));
-        
+        await CopyFilesAsync(inputPath,        Path.Combine(bdccLocalizationReplacerPath, "source"));
+
         TranslationHashIndexFile.SetDir(currentDir);
         await using var sourceStream      = File.Open(TranslationHashIndexFile.Instance.FilePath, FileMode.Open);
         await using var destinationStream = File.Create(Path.Combine(bdccLocalizationReplacerPath, Path.GetFileName(TranslationHashIndexFile.Instance.FilePath)));
         await sourceStream.CopyToAsync(destinationStream, cancellationToken);
-        
+
         await PythonTranslateReplace();
         ZipFile.CreateFromDirectory(Path.Combine(bdccLocalizationReplacerPath, "output"), Path.Combine(currentDir, "BdccChineseLocalization.zip"));
     }
