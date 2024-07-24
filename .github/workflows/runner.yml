@@ -43,7 +43,7 @@ jobs:
     name: 🏗️ Build
     runs-on: ubuntu-latest
     container:
-      image: godotengine/godot-builds:3.5.3
+      image: godotengine/godot-builds:3.5.2
     steps:
       - name: Download translation artifact
         uses: actions/download-artifact@v4
@@ -57,13 +57,12 @@ jobs:
             mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/templates/${GODOT_VERSION}.stable
       - name: Windows Build
         run: |
-            cd ./BdccChineseLocalization
             mkdir -v -p build/windows
-            godot -v --export "Windows Desktop" ./build/windows/$EXPORT_NAME.exe
+            godot -v --path ./BdccChineseLocalization --export "Windows Desktop" ./build/windows/$EXPORT_NAME.exe
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: godot-windows
-          path: ./BdccChineseLocalization/build/windows
+          path: ./build/windows
           retention-days: 7
           
