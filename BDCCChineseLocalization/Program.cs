@@ -272,25 +272,54 @@ public class Program
         ZipFile.ExtractToDirectory(artifactFilePath, artifactDirPath);
         var extractedDirPath = Path.Combine(artifactDirPath, "utf8");
 
-        await CopyFilesAsync(extractedDirPath, Path.Combine(bdccLocalizationReplacerPath, "trans"));
-        await CopyFilesAsync(inputPath,        Path.Combine(bdccLocalizationReplacerPath, "source"));
+        CopyDirectory(extractedDirPath, Path.Combine(bdccLocalizationReplacerPath, "trans"),  true);
+        CopyDirectory(inputPath,        Path.Combine(bdccLocalizationReplacerPath, "source"), true);
 
         TranslationHashIndexFile.SetDir(currentDir);
         await using var sourceStream      = File.Open(TranslationHashIndexFile.Instance.FilePath, FileMode.Open);
         await using var destinationStream = File.Create(Path.Combine(bdccLocalizationReplacerPath, Path.GetFileName(TranslationHashIndexFile.Instance.FilePath)));
         await sourceStream.CopyToAsync(destinationStream, cancellationToken);
+        sourceStream.Close();
+        destinationStream.Close();
 
         await PythonTranslateReplace();
         ZipFile.CreateFromDirectory(Path.Combine(bdccLocalizationReplacerPath, "output"), Path.Combine(currentDir, "BdccChineseLocalization.zip"));
     }
-    public async Task CopyFilesAsync(string startDirectory, string endDirectory)
+    static void CopyDirectory(string sourceDir, string destinationDir, bool recursive)
     {
+        // Get information about the source directory
+        var dir = new DirectoryInfo(sourceDir);
 
-        foreach (var filename in Directory.EnumerateFiles(startDirectory))
+        // Check if the source directory exists
+        if (!dir.Exists)
+            throw new DirectoryNotFoundException($"Source directory not found: {dir.FullName}");
+
+        // Cache directories before we start copying
+        DirectoryInfo[] dirs = dir.GetDirectories();
+
+        // Create the destination directory
+        Directory.CreateDirectory(destinationDir);
+
+        // Get the files in the source directory and copy to the destination directory
+        foreach (FileInfo file in dir.GetFiles())
         {
-            await using var sourceStream      = File.Open(filename, FileMode.Open);
-            await using var destinationStream = File.Create(Path.Combine(endDirectory, Path.GetFileName(filename)));
-            await sourceStream.CopyToAsync(destinationStream);
+            string targetFilePath = Path.Combine(destinationDir, file.Name);
+            if (File.Exists(targetFilePath))
+            {
+
+                File.Delete(targetFilePath);
+            }
+            file.CopyTo(targetFilePath);
+        }
+
+        // If recursive and copying subdirectories, recursively call this method
+        if (recursive)
+        {
+            foreach (DirectoryInfo subDir in dirs)
+            {
+                string newDestinationDir = Path.Combine(destinationDir, subDir.Name);
+                CopyDirectory(subDir.FullName, newDestinationDir, true);
+            }
         }
     }
     public async Task TestTscn([Option('i', "input", Description = "项目路径")] string inputPath = "BDCC")
@@ -361,7 +390,7 @@ public class Program
     }
     public async Task TestScript()
     {
-        // await PythonTranslateReplace("paratranz", "bdcc");
+        await PythonTranslateReplace();
     }
     public async Task TestErrorFiles(string path = "output")
     {
