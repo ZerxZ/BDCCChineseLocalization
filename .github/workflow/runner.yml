@@ -1,0 +1,42 @@
+name: Build BDDC Chinese Localization Nightly
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '15 13 * * *'
+  push:
+  pull_request: 
+
+permissions: write-all
+
+env:
+  GODOT_VERSION: "3.5.2"
+  PARATRANZ_TOKEN: ${{ secrets.PARATRANZ_TOKEN }}
+  PARATRANZ_PROJECT: ${{ vars.PARATRANZ_PROJECT }}
+  
+jobs:
+  display-variables:
+    name: ${{ vars.JOB_NAME }}
+    # You can use configuration variables with the `vars` context for dynamic jobs
+    if: ${{ vars.USE_VARIABLES == 'true' }}
+    runs-on: ${{ vars.RUNNER }}
+    environment: ${{ vars.ENVIRONMENT_STAGE }}
+    steps:
+      - name: Use variables
+        run: |
+          echo "repository variable : $REPOSITORY_VAR"
+          echo "organization variable : $ORGANIZATION_VAR"
+          echo "overridden variable : $OVERRIDE_VAR"
+          echo "variable from shell environment : $env_var"
+          echo "PARATRANZ_PROJECT : $PARATRANZ_PROJECT"
+          echo "GODOT_VERSION : $GODOT_VERSION"
+        env:
+          REPOSITORY_VAR: ${{ vars.REPOSITORY_VAR }}
+          ORGANIZATION_VAR: ${{ vars.ORGANIZATION_VAR }}
+          OVERRIDE_VAR: ${{ vars.OVERRIDE_VAR }}
+
+      - name: ${{ vars.HELLO_WORLD_STEP }}
+        if: ${{ vars.HELLO_WORLD_ENABLED == 'true' }}
+        uses: actions/hello-world-javascript-action@main
+        with:
+          who-to-greet: ${{ vars.GREET_NAME }}
+  
