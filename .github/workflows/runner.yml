@@ -103,15 +103,15 @@ jobs:
         run: unzip BdccChineseLocalization.zip -d ./BdccChineseLocalization
       - name: Setup
         run: |
-          mkdir -v -p ~/.local/share/godot/templates
+          mkdir -v -p ~/.local/share/godot/export_templates
           ls /root/.local/share/godot/templates/${GODOT_VERSION}.stable
-          mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/templates/${GODOT_VERSION}.stable
+          mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
       - name: Build
         run: |
           mkdir -v -p build/linux
           cd BdccChineseLocalization
-          godot -v --export "Linux/X11" ./build/linux/$EXPORT_NAME.x86_64
-          # godot -v --path ./BdccChineseLocalization --export "Linux/X11" ./build/linux/$EXPORT_NAME.x86_64
+          godot -v --export "Linux/X11" ./build/linux/$EXPORT_NAME
+          # godot -v --path ./BdccChineseLocalization --export "Linux/X11" ./build/linux/$EXPORT_NAME
       - name: Zip
         run: |
           cd ./build/linux/
@@ -142,8 +142,8 @@ jobs:
         run: unzip BdccChineseLocalization.zip -d ./BdccChineseLocalization
       - name: Setup
         run: |
-          mkdir -v -p ~/.local/share/godot/templates
-          mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/templates/${GODOT_VERSION}.stable
+          mkdir -v -p ~/.local/share/godot/export_templates
+          mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
       - name: Build
         run: |
           mkdir -v -p build/macos/
@@ -180,8 +180,8 @@ jobs:
         run: unzip BdccChineseLocalization.zip -d ./BdccChineseLocalization
       - name: Setup
         run: |
-          mkdir -v -p ~/.local/share/godot/templates
-          mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/templates/${GODOT_VERSION}.stable
+          mkdir -v -p ~/.local/share/godot/export_templates
+          mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
       - name: Build
         run: |
           mkdir -v -p build/web/
