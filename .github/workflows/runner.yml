@@ -108,7 +108,9 @@ jobs:
       - name: Build
         run: |
           mkdir -v -p build/linux
-          godot -v --path ./BdccChineseLocalization --export "Linux/X11" ./build/linux/$EXPORT_NAME.x86_64
+          cd BdccChineseLocalization
+          godot -v --export "Linux/X11" ./build/linux/$EXPORT_NAME.x86_64
+          # godot -v --path ./BdccChineseLocalization --export "Linux/X11" ./build/linux/$EXPORT_NAME.x86_64
       - name: Zip
         run: |
           cd ./build/linux/
@@ -144,7 +146,9 @@ jobs:
       - name: Build
         run: |
           mkdir -v -p build/macos/
-          godot -v --path ./BdccChineseLocalization --export "Mac OSX" ./build/macos/$EXPORT_NAME.zip
+          cd BdccChineseLocalization
+          godot -v --export "Mac OSX" ./build/macos/$EXPORT_NAME.zip
+          # godot -v --path ./BdccChineseLocalization --export "Mac OSX" ./build/macos/$EXPORT_NAME.zip
       - name: Zip
         run: |
           cd ./build/macos/
@@ -180,7 +184,9 @@ jobs:
       - name: Build
         run: |
           mkdir -v -p build/web/
-          godot -v --path ./BdccChineseLocalization --export "HTML5" ./build/web/index.html
+          cd BdccChineseLocalization
+          godot -v --export "HTML5" ./build/web/index.html
+          # godot -v --path ./BdccChineseLocalization --export "HTML5" ./build/web/index.html
           cd ./build/web/
           zip -r $EXPORT_NAME-WEB.zip .
       - name: Upload artifact
@@ -190,44 +196,9 @@ jobs:
           path: ./build/web/$EXPORT_NAME-WEB.zip
           retention-days: 7
   
-  pck-build:
-    name: 📦 PCK Build
-    needs: translate
-    runs-on: ubuntu-20.04
-    container:
-      image: barichello/godot-ci:3.5.2
-    steps:
-      - name: Check Submodules
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          lfs: true
-      - name: Download translation artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: bdcc-chinese-translation
-      - name: Unzip translation artifact
-        run: unzip BdccChineseLocalization.zip -d ./BdccChineseLocalization
-      - name: Setup
-        run: |
-          mkdir -v -p ~/.local/share/godot/templates
-          mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/templates/${GODOT_VERSION}.stable
-      - name: Build
-        run: |
-          mkdir -v -p build/pck/
-          godot -v --path ./BdccChineseLocalization --export-pack  ./build/pck/$EXPORT_NAME.pck
-          cd ./build/pck/
-          zip -r $EXPORT_NAME-PCK.zip .
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: bdcc-pck
-          path: ./build/pck/$EXPORT_NAME-PCK.zip
-          retention-days: 7
-  
   release:
     name: 🚀 Release
-    needs: [ window-build, linux-build, macos-build, web-build, pck-build ]
+    needs: [ window-build, linux-build, macos-build, web-build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.1
