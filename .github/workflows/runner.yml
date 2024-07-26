@@ -195,6 +195,39 @@ jobs:
           name: bdcc-web
           path: ./build/web/BDCC-WEB.zip
           retention-days: 7
+  android-build:
+    name: 🤖 Android Build
+    needs: translate
+    runs-on: ubuntu-20.04
+    container:
+      image: barichello/godot-ci:3.5.2
+    steps:
+      - name: Check Submodules
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Download translation artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bdcc-chinese-translation
+      - name: Unzip translation artifact
+        run: unzip BdccChineseLocalization.zip -d ./BdccChineseLocalization
+      - name: Setup
+        run: |
+          mkdir -v -p ~/.local/share/godot/templates
+          mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/templates/${GODOT_VERSION}.stable
+      - name: Godot Android export
+        uses: dulvui/godot-android-export@v3
+        with:
+            working-directory: BdccChineseLocalization
+            godot-version: ${{ env.GODOT_VERSION }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bdcc-android
+          path: ./BBDC.apk
+          retention-days: 7
+  
   
   release:
     name: 🚀 Release
