@@ -73,15 +73,15 @@ jobs:
           cd BdccChineseLocalization
           godot -v --export "Windows Desktop" ../build/windows/$EXPORT_NAME.exe
           # godot -v --path ./BdccChineseLocalization --export "Windows Desktop" ./build/windows/$EXPORT_NAME-Windows.exe
-      - name: Zip
-        run: |
-          cd ./build/windows/
-          zip -r $EXPORT_NAME-Windows.zip .
+      # - name: Zip
+      #   run: |
+      #     cd ./build/windows/
+      #     zip -r $EXPORT_NAME-Windows.zip .
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: bdcc-windows
-          path: ./build/windows/$EXPORT_NAME-Windows.zip
+          path: ./build/windows/
           retention-days: 7
   
   linux-build:
