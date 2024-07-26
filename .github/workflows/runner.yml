@@ -69,7 +69,7 @@ jobs:
           mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/templates/${GODOT_VERSION}.stable
       - name: Build
         run: |
-          mkdir -v -p build/windows
+          mkdir -v -p ./build/windows
           cd BdccChineseLocalization
           godot -v --export "Windows Desktop" ../build/windows/$EXPORT_NAME.exe
           # godot -v --path ./BdccChineseLocalization --export "Windows Desktop" ./build/windows/$EXPORT_NAME-Windows.exe
