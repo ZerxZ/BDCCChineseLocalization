@@ -23,6 +23,13 @@ jobs:
         with: 
             submodules: recursive
             lfs: true
+      - name: Checkout BDCC-Localization-Replacer
+        uses: actions/checkout@v4
+        with:
+          repository: HCPTangHY/BDCC-Localization-Replacer
+          ref: main
+          submodules: 'recursive'
+          path: 'BDCC-Localization-Replacer'
       
       - name: Set up .NET Sdk
         uses: actions/setup-dotnet@v4
@@ -42,7 +49,7 @@ jobs:
   build:
     needs: translate
     name: 🏗️ Build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     container:
       image: barichello/godot-ci:3.5.2
     steps:
