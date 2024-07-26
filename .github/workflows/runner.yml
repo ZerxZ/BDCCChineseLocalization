@@ -47,7 +47,6 @@ jobs:
       - name: Check Submodules
         uses: actions/checkout@v4
         with:
-          submodules: recursive
           lfs: true
       - name: Download translation artifact
         uses: actions/download-artifact@v4
@@ -59,10 +58,12 @@ jobs:
         run: |
           mkdir -v -p ~/.local/share/godot/templates
           mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/templates/${GODOT_VERSION}.stable
-      - name: Windows Build
+      - name: Build
         run: |
           mkdir -v -p build/windows
           godot -v --path ./BdccChineseLocalization --export "Windows Desktop" ./build/windows/$EXPORT_NAME.exe
+      - name: Zip
+        run: |
           cd ./build/linux/
           zip -r $EXPORT_NAME-Windows.zip .
       - name: Upload artifact
@@ -82,7 +83,6 @@ jobs:
       - name: Check Submodules
         uses: actions/checkout@v4
         with:
-          submodules: recursive
           lfs: true
       - name: Download translation artifact
         uses: actions/download-artifact@v4
@@ -94,10 +94,12 @@ jobs:
         run: |
           mkdir -v -p ~/.local/share/godot/templates
           mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/templates/${GODOT_VERSION}.stable
-      - name: Windows Build
+      - name: Build
         run: |
           mkdir -v -p build/linux
           godot -v --path ./BdccChineseLocalization --export "Linux/X11" ./build/linux/$EXPORT_NAME.x86_64
+      - name: Zip
+        run: |
           cd ./build/linux/
           zip -r $EXPORT_NAME-Linux.zip .
       - name: Upload artifact
@@ -117,7 +119,6 @@ jobs:
       - name: Check Submodules
         uses: actions/checkout@v4
         with:
-          submodules: recursive
           lfs: true
       - name: Download translation artifact
         uses: actions/download-artifact@v4
@@ -129,10 +130,12 @@ jobs:
         run: |
           mkdir -v -p ~/.local/share/godot/templates
           mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/templates/${GODOT_VERSION}.stable
-      - name: Windows Build
+      - name: Build
         run: |
           mkdir -v -p build/macos/
           godot -v --path ./BdccChineseLocalization --export "Mac OSX" ./build/macos/$EXPORT_NAME.zip
+      - name: Zip
+        run: |
           cd ./build/macos/
           zip -r $EXPORT_NAME-Macos.zip .
       - name: Upload artifact
@@ -152,7 +155,6 @@ jobs:
       - name: Check Submodules
         uses: actions/checkout@v4
         with:
-          submodules: recursive
           lfs: true
       - name: Download translation artifact
         uses: actions/download-artifact@v4
@@ -164,7 +166,7 @@ jobs:
         run: |
           mkdir -v -p ~/.local/share/godot/templates
           mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/templates/${GODOT_VERSION}.stable
-      - name: Windows Build
+      - name: Build
         run: |
           mkdir -v -p build/web/
           godot -v --path ./BdccChineseLocalization --export "HTML5" ./build/web/index.html
@@ -199,7 +201,7 @@ jobs:
         run: |
           mkdir -v -p ~/.local/share/godot/templates
           mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/templates/${GODOT_VERSION}.stable
-      - name: Windows Build
+      - name: Build
         run: |
           mkdir -v -p build/pck/
           godot -v --path ./BdccChineseLocalization --export-pack  ./build/pck/$EXPORT_NAME.pck
