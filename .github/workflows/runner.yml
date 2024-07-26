@@ -49,7 +49,7 @@ jobs:
   window-build:
     name: 🏁 Windows Build
     needs: translate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     container:
       image: barichello/godot-ci:3.5.2
     steps:
@@ -85,7 +85,7 @@ jobs:
   linux-build:
     name: 🐧 Linux Build
     needs: translate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     container:
       image: barichello/godot-ci:3.5.2
     steps:
@@ -121,7 +121,7 @@ jobs:
   macos-build:
     name: 🍎 MacOS Build
     needs: translate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     container:
       image: barichello/godot-ci:3.5.2
     steps:
@@ -157,7 +157,7 @@ jobs:
   web-build:
     name: 🌐 Web Build
     needs: translate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     container:
       image: barichello/godot-ci:3.5.2
     steps:
@@ -191,7 +191,7 @@ jobs:
   pck-build:
     name: 📦 PCK Build
     needs: translate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     container:
       image: barichello/godot-ci:3.5.2
     steps:
