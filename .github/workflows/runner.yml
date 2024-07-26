@@ -12,7 +12,7 @@ env:
   GODOT_VERSION: "3.5.2"
   PARATRANZ_TOKEN: ${{ secrets.PARATRANZ_TOKEN }}
   PARATRANZ_PROJECT: ${{ secrets.PARATRANZ_PROJECT }}
-  
+  EXPORT_NAME: BDCC
 jobs:
   translate:
     name: 🌐 Translate
