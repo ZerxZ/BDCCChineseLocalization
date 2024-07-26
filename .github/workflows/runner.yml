@@ -75,12 +75,12 @@ jobs:
       - name: Zip
         run: |
           cd ./build/windows/
-          zip -r ${EXPORT_NAME}-Windows.zip .
+          zip -r BDCC-Windows.zip .
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: bdcc-windows
-          path: ./build/windows/${EXPORT_NAME}-Windows.zip
+          path: ./build/windows/BDCC-Windows.zip
           retention-days: 7
   
   linux-build:
@@ -114,12 +114,12 @@ jobs:
       - name: Zip
         run: |
           cd ./build/linux/
-          zip -r ${EXPORT_NAME}-Linux.zip .
+          zip -r BDCC-Linux.zip .
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: bdcc-linux
-          path: ./build/linux/${EXPORT_NAME}-Linux.zip
+          path: ./build/linux/BDCC-Linux.zip
           retention-days: 7
   
   macos-build:
@@ -151,12 +151,12 @@ jobs:
       - name: Zip
         run: |
           cd ./build/macos/
-          zip -r ${EXPORT_NAME}-Macos.zip .
+          zip -r BDCC-Macos.zip .
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: bdcc-macos
-          path: ./build/macos/${EXPORT_NAME}-Macos.zip
+          path: ./build/macos/BDCC-Macos.zip
           retention-days: 7
   
   web-build:
@@ -188,12 +188,12 @@ jobs:
       - name: Zip
         run: |
           cd ./build/web/
-          zip -r ${EXPORT_NAME}-WEB.zip .
+          zip -r BDCC-WEB.zip .
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: bdcc-web
-          path: ./build/web/${EXPORT_NAME}-WEB.zip
+          path: ./build/web/BDCC-WEB.zip
           retention-days: 7
   
   release:
