@@ -4,7 +4,7 @@ on:
   schedule:
     - cron: '15 13 * * *'
   push:
-  pull_request: 
+  pull_request:
 
 permissions: write-all
 
@@ -12,7 +12,7 @@ env:
   GODOT_VERSION: "3.5.2"
   PARATRANZ_TOKEN: ${{ secrets.PARATRANZ_TOKEN }}
   PARATRANZ_PROJECT: ${{ secrets.PARATRANZ_PROJECT }}
-  EXPORT_NAME: BDCC
+
 jobs:
   translate:
     name: 🌐 Translate
@@ -20,22 +20,14 @@ jobs:
     steps:
       - name: Check Submodules
         uses: actions/checkout@v4
-        with: 
-            submodules: recursive
-            lfs: true
-      - name: Checkout BDCC-Localization-Replacer
-        uses: actions/checkout@v4
         with:
-          repository: HCPTangHY/BDCC-Localization-Replacer
-          ref: main
-          submodules: 'recursive'
-          path: 'BDCC-Localization-Replacer'
-      
+          submodules: recursive
+
       - name: Set up .NET Sdk
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
-      
+
       - name: Run translation
         run: dotnet run --project BDCCChineseLocalization Translate ${{ env.PARATRANZ_TOKEN }} ${{ env.PARATRANZ_PROJECT }}
       - name: Upload translation artifact
@@ -44,20 +36,19 @@ jobs:
           name: bdcc-chinese-translation
           path: ./BdccChineseLocalization.zip
           retention-days: 7
-          
-          
-  build:
+  
+  window-build:
+    name: 🏁 Windows Build
     needs: translate
-    name: 🏗️ Build
     runs-on: ubuntu-latest
     container:
       image: barichello/godot-ci:3.5.2
     steps:
       - name: Check Submodules
         uses: actions/checkout@v4
-        with: 
-            submodules: recursive
-            lfs: true
+        with:
+          submodules: recursive
+          lfs: true
       - name: Download translation artifact
         uses: actions/download-artifact@v4
         with:
@@ -66,17 +57,193 @@ jobs:
         run: unzip BdccChineseLocalization.zip -d ./BdccChineseLocalization
       - name: Setup
         run: |
-            mkdir -v -p ~/.local/share/godot/templates
-            mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/templates/${GODOT_VERSION}.stable
+          mkdir -v -p ~/.local/share/godot/templates
+          mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/templates/${GODOT_VERSION}.stable
       - name: Windows Build
         run: |
-            mkdir -v -p build/windows
-            cd BdccChineseLocalization
-            godot -v --export "Windows Desktop" ../build/windows/$EXPORT_NAME.exe
+          mkdir -v -p build/windows
+          godot -v --path ./BdccChineseLocalization --export "Windows Desktop" ./build/windows/$EXPORT_NAME.exe
+          cd ./build/linux/
+          zip -r $EXPORT_NAME-Windows.zip .
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: bdcc-windows
-          path: ./build/windows/
+          path: ./build/windows/$EXPORT_NAME-Windows.zip
           retention-days: 7
-          
+  
+  linux-build:
+    name: 🐧 Linux Build
+    needs: translate
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:3.5.2
+    steps:
+      - name: Check Submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          lfs: true
+      - name: Download translation artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bdcc-chinese-translation
+      - name: Unzip translation artifact
+        run: unzip BdccChineseLocalization.zip -d ./BdccChineseLocalization
+      - name: Setup
+        run: |
+          mkdir -v -p ~/.local/share/godot/templates
+          mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/templates/${GODOT_VERSION}.stable
+      - name: Windows Build
+        run: |
+          mkdir -v -p build/linux
+          godot -v --path ./BdccChineseLocalization --export "Linux/X11" ./build/linux/$EXPORT_NAME.x86_64
+          cd ./build/linux/
+          zip -r $EXPORT_NAME-Linux.zip .
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bdcc-linux
+          path: ./build/linux/$EXPORT_NAME-Linux.zip
+          retention-days: 7
+  
+  macos-build:
+    name: 🍎 MacOS Build
+    needs: translate
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:3.5.2
+    steps:
+      - name: Check Submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          lfs: true
+      - name: Download translation artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bdcc-chinese-translation
+      - name: Unzip translation artifact
+        run: unzip BdccChineseLocalization.zip -d ./BdccChineseLocalization
+      - name: Setup
+        run: |
+          mkdir -v -p ~/.local/share/godot/templates
+          mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/templates/${GODOT_VERSION}.stable
+      - name: Windows Build
+        run: |
+          mkdir -v -p build/macos/
+          godot -v --path ./BdccChineseLocalization --export "Mac OSX" ./build/macos/$EXPORT_NAME.zip
+          cd ./build/macos/
+          zip -r $EXPORT_NAME-Macos.zip .
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bdcc-macos
+          path: ./build/macos/$EXPORT_NAME-Macos.zip
+          retention-days: 7
+  
+  web-build:
+    name: 🌐 Web Build
+    needs: translate
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:3.5.2
+    steps:
+      - name: Check Submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          lfs: true
+      - name: Download translation artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bdcc-chinese-translation
+      - name: Unzip translation artifact
+        run: unzip BdccChineseLocalization.zip -d ./BdccChineseLocalization
+      - name: Setup
+        run: |
+          mkdir -v -p ~/.local/share/godot/templates
+          mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/templates/${GODOT_VERSION}.stable
+      - name: Windows Build
+        run: |
+          mkdir -v -p build/web/
+          godot -v --path ./BdccChineseLocalization --export "HTML5" ./build/web/index.html
+          cd ./build/web/
+          zip -r $EXPORT_NAME-WEB.zip .
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bdcc-web
+          path: ./build/web/$EXPORT_NAME-WEB.zip
+          retention-days: 7
+  
+  pck-build:
+    name: 📦 PCK Build
+    needs: translate
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:3.5.2
+    steps:
+      - name: Check Submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          lfs: true
+      - name: Download translation artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bdcc-chinese-translation
+      - name: Unzip translation artifact
+        run: unzip BdccChineseLocalization.zip -d ./BdccChineseLocalization
+      - name: Setup
+        run: |
+          mkdir -v -p ~/.local/share/godot/templates
+          mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/templates/${GODOT_VERSION}.stable
+      - name: Windows Build
+        run: |
+          mkdir -v -p build/pck/
+          godot -v --path ./BdccChineseLocalization --export-pack  ./build/pck/$EXPORT_NAME.pck
+          cd ./build/pck/
+          zip -r $EXPORT_NAME-PCK.zip .
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bdcc-pck
+          path: ./build/pck/$EXPORT_NAME-PCK.zip
+          retention-days: 7
+  
+  release:
+    name: 🚀 Release
+    needs: [ window-build, linux-build, macos-build, web-build, pck-build ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.1.1
+      - name: Download Godot Artifact
+        uses: actions/download-artifact@v4.1.4
+        with:
+          pattern: 'bdcc-*'
+          merge-multiple: true
+      - name: Set Release version env variable
+        id: release-selector
+        run: |
+          echo "RELEASE_VERSION=$(date "+%y.%m.%d")" >> $GITHUB_OUTPUT
+      - name: Automatic Pre Releases
+        uses: ncipollo/release-action@v1.14.0
+        with:
+          tag: "pre-latest"
+          prerelease: true
+          name: "Pre-Release ${{ env.RELEASE_VERSION }}"
+          allowUpdates: true
+          artifacts: |
+            *.zip
+      - name: Automatic Releases
+        uses: ncipollo/release-action@v1.14.0
+        env:
+          RELEASE_VERSION: ${{ steps.release-selector.outputs.RELEASE_VERSION }}
+        with:
+          tag: "bdcc.${{ env.RELEASE_VERSION }}"
+          prerelease: false
+          name: "Bdcc Release ${{ env.RELEASE_VERSION }}"
+          allowUpdates: true
+          artifacts: |
+            *.zip  
