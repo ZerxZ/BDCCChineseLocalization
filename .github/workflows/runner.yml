@@ -72,7 +72,7 @@ jobs:
           mkdir -v -p build/windows
           cd BdccChineseLocalization
           godot -v --export "Windows Desktop" ../build/windows/$EXPORT_NAME.exe
-          # godot -v --path ./BdccChineseLocalization --export "Windows Desktop" ./build/windows/$EXPORT_NAME.exe
+          # godot -v --path ./BdccChineseLocalization --export "Windows Desktop" ./build/windows/$EXPORT_NAME-Windows.exe
       - name: Zip
         run: |
           cd ./build/windows/
