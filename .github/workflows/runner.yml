@@ -12,7 +12,7 @@ env:
   GODOT_VERSION: "3.5.2"
   PARATRANZ_TOKEN: ${{ secrets.PARATRANZ_TOKEN }}
   PARATRANZ_PROJECT: ${{ secrets.PARATRANZ_PROJECT }}
-
+  EXPORT_NAME: BDCC
 jobs:
   translate:
     name: 🌐 Translate
@@ -70,10 +70,12 @@ jobs:
       - name: Build
         run: |
           mkdir -v -p build/windows
-          godot -v --path ./BdccChineseLocalization --export "Windows Desktop" ./build/windows/$EXPORT_NAME.exe
+          cd BdccChineseLocalization
+          godot -v --export "Windows Desktop" ../build/windows/$EXPORT_NAME.exe
+          # godot -v --path ./BdccChineseLocalization --export "Windows Desktop" ./build/windows/$EXPORT_NAME.exe
       - name: Zip
         run: |
-          cd ./build/linux/
+          cd ./build/windows/
           zip -r $EXPORT_NAME-Windows.zip .
       - name: Upload artifact
         uses: actions/upload-artifact@v4
