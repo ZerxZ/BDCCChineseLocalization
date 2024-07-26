@@ -106,6 +106,7 @@ jobs:
           mkdir -v -p ~/.local/share/godot/templates
           ls /root/.local/share/godot/templates/${GODOT_VERSION}.stable
           mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/templates/${GODOT_VERSION}.stable
+          ls ~/.local/share/godot/templates/${GODOT_VERSION}.stable
       - name: Build
         run: |
           mkdir -v -p build/linux
