@@ -71,17 +71,16 @@ jobs:
         run: |
           mkdir -v -p ./build/windows
           cd BdccChineseLocalization
-          godot -v --export "Windows Desktop" ../build/windows/$EXPORT_NAME.exe
-          # godot -v --path ./BdccChineseLocalization --export "Windows Desktop" ./build/windows/$EXPORT_NAME-Windows.exe
-      # - name: Zip
-      #   run: |
-      #     cd ./build/windows/
-      #     zip -r $EXPORT_NAME-Windows.zip .
+          godot --export "Windows Desktop" ../build/windows/${EXPORT_NAME}.exe
+      - name: Zip
+        run: |
+          cd ./build/windows/
+          zip -r ${EXPORT_NAME}-Windows.zip .
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: bdcc-windows
-          path: ./build/windows/
+          path: ./build/windows/${EXPORT_NAME}-Windows.zip
           retention-days: 7
   
   linux-build:
@@ -111,17 +110,16 @@ jobs:
         run: |
           mkdir -v -p ./build/linux
           cd BdccChineseLocalization
-          godot -v --export "Linux/X11" ./build/linux/$EXPORT_NAME
-          # godot -v --path ./BdccChineseLocalization --export "Linux/X11" ./build/linux/$EXPORT_NAME
+          godot --export "Linux/X11" ../build/linux/${EXPORT_NAME}.x86_64
       - name: Zip
         run: |
           cd ./build/linux/
-          zip -r $EXPORT_NAME-Linux.zip .
+          zip -r ${EXPORT_NAME}-Linux.zip .
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: bdcc-linux
-          path: ./build/linux/$EXPORT_NAME-Linux.zip
+          path: ./build/linux/${EXPORT_NAME}-Linux.zip
           retention-days: 7
   
   macos-build:
@@ -149,17 +147,16 @@ jobs:
         run: |
           mkdir -v -p ./build/macos
           cd BdccChineseLocalization
-          godot -v --export "Mac OSX" ./build/macos/$EXPORT_NAME.zip
-          # godot -v --path ./BdccChineseLocalization --export "Mac OSX" ./build/macos/$EXPORT_NAME.zip
+          godot --export "Mac OSX" ../build/macos/${EXPORT_NAME}.zip
       - name: Zip
         run: |
           cd ./build/macos/
-          zip -r $EXPORT_NAME-Macos.zip .
+          zip -r ${EXPORT_NAME}-Macos.zip .
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: bdcc-macos
-          path: ./build/macos/$EXPORT_NAME-Macos.zip
+          path: ./build/macos/${EXPORT_NAME}-Macos.zip
           retention-days: 7
   
   web-build:
@@ -187,20 +184,21 @@ jobs:
         run: |
           mkdir -v -p ./build/web
           cd BdccChineseLocalization
-          godot -v --export "HTML5" ./build/web/index.html
-          # godot -v --path ./BdccChineseLocalization --export "HTML5" ./build/web/index.html
+          godot --export "HTML5" ../build/web/index.html
+      - name: Zip
+        run: |
           cd ./build/web/
-          zip -r $EXPORT_NAME-WEB.zip .
+          zip -r ${EXPORT_NAME}-WEB.zip .
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: bdcc-web
-          path: ./build/web/$EXPORT_NAME-WEB.zip
+          path: ./build/web/${EXPORT_NAME}-WEB.zip
           retention-days: 7
   
   release:
     name: 🚀 Release
-    needs: [ window-build, linux-build, macos-build, web-build]
+    needs: [ window-build, linux-build, macos-build, web-build ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.1
