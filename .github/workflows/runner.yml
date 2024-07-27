@@ -9,7 +9,7 @@ on:
 permissions: write-all
 
 env:
-  GODOT_VERSION: 3.5.2
+  GODOT_VERSION: "3.5.2"
   PARATRANZ_TOKEN: ${{ secrets.PARATRANZ_TOKEN }}
   PARATRANZ_PROJECT: ${{ secrets.PARATRANZ_PROJECT }}
   EXPORT_NAME: BDCC
@@ -71,7 +71,7 @@ jobs:
         run: |
           mkdir -v -p ./build/windows
           cd BdccChineseLocalization
-          godot --export "Windows Desktop" ../build/windows/${EXPORT_NAME}.exe
+          godot --headless --export "Windows Desktop" ../build/windows/${EXPORT_NAME}.exe
       - name: Zip
         run: |
           cd ./build/windows/
@@ -110,7 +110,7 @@ jobs:
         run: |
           mkdir -v -p ./build/linux
           cd BdccChineseLocalization
-          godot --export "Linux/X11" ../build/linux/${EXPORT_NAME}.x86_64
+          godot --headless --export "Linux/X11" ../build/linux/${EXPORT_NAME}.x86_64
       - name: Zip
         run: |
           cd ./build/linux/
@@ -147,7 +147,7 @@ jobs:
         run: |
           mkdir -v -p ./build/macos
           cd BdccChineseLocalization
-          godot --export "Mac OSX" ../build/macos/${EXPORT_NAME}.zip
+          godot --headless --export "Mac OSX" ../build/macos/${EXPORT_NAME}.zip
       - name: Zip
         run: |
           cd ./build/macos/
@@ -184,7 +184,7 @@ jobs:
         run: |
           mkdir -v -p ./build/web
           cd BdccChineseLocalization
-          godot --export "HTML5" ../build/web/index.html
+          godot --headless --export "HTML5" ../build/web/index.html
       - name: Zip
         run: |
           cd ./build/web/
@@ -216,17 +216,16 @@ jobs:
         run: |
           mkdir -v -p ~/.local/share/godot/templates
           mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/templates/${GODOT_VERSION}.stable
-      - name: Godot Android export
-        uses: dulvui/godot-android-export@v4
-        with:
-            working-directory: BdccChineseLocalization
-            godot-version: ${{ env.GODOT_VERSION }}
+      - name: Build
+        run: |
+          mkdir -v -p ./build/android
+          cd BdccChineseLocalization
+          godot --headless --export-debug "Android" ../build/android/${EXPORT_NAME}-debug.apk
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: bdcc-android
-          path: ./BBDC.apk
-          retention-days: 7
+          path: ./build/android/BDCC-Android-debug.apk
   
   
   release:
