@@ -257,6 +257,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: ${{env.JAVA_VERSION}}
+          distribution: 'temurin'
       - name: Cache android toolchain and packages
         id: android-cache
         uses: actions/cache@v4
