@@ -220,7 +220,7 @@ jobs:
         run: |
           mkdir -v -p ./build/android
           cd BdccChineseLocalization
-          godot --headless --export-debug "Android" ../build/android/${EXPORT_NAME}-debug.apk
+          godot --headless --export-debug "Android Debug" ../build/android/${EXPORT_NAME}-debug.apk
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
