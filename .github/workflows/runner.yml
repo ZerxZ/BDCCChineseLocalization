@@ -279,7 +279,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --target aarch64-linux-android --release
+          args: --manifest-path source/native/Cargo.toml --target aarch64-linux-android --release
         env:
           CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER: ${{env.ANDROID_SDK_ROOT}}/ndk/${{env.ANDROID_NDK_VERSION}}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android${{env.ANDROID_VERSION}}-clang
           CARGO_TARGET_DIR: source/native/target
@@ -290,7 +290,7 @@ jobs:
           args: --manifest-path source/native/Cargo.toml --target x86_64-linux-android --release
         env:
           CARGO_TARGET_X86_64_LINUX_ANDROID_LINKER: ${{env.ANDROID_SDK_ROOT}}/ndk/${{env.ANDROID_NDK_VERSION}}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android${{env.ANDROID_VERSION}}-clang
-          # CARGO_TARGET_DIR: source/native/target
+          CARGO_TARGET_DIR: source/native/target
       - name: Compile native lib for armv7 android
         uses: actions-rs/cargo@v1
         with:
