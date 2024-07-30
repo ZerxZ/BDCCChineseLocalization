@@ -234,8 +234,8 @@ jobs:
          
           mkdir -v -p ./build/android
           cd BdccChineseLocalization
-          echo "${{ secrets.ANDROID_KEYSTORE_FILE }}" | base64 --decode > ${{ github.workspace }}/debug.keystore
-          sed 's@keystore/debug=".*"@keystore/debug="'${{ github.workspace }}/debug.keystore'"@g' -i export_presets.cfg
+          echo "${{ secrets.ANDROID_KEYSTORE_FILE }}" | base64 --decode > $GITHUB_WORKSPACE/debug.keystore
+          sed 's@keystore/debug=".*"@keystore/debug="'$GITHUB_WORKSPACE/debug.keystore'"@g' -i export_presets.cfg
           godot --headless --export-debug "Android Debug" ../build/android/${EXPORT_NAME}-debug.apk
       - name: Upload artifact
         uses: actions/upload-artifact@v4
