@@ -220,11 +220,11 @@ jobs:
             
       - name: Build
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_FILE }}" | base64 --decode > ./BdccChineseLocalization/debug.keystore
+          echo "${{ secrets.ANDROID_KEYSTORE_FILE }}" | base64 --decode > root/debug.keystore
           mkdir -v -p ./build/android
           cd BdccChineseLocalization
-          sed 's@keystore/debug=".*"@keystore/debug="'./debug.keystore'"@g' -i export_presets.cfg
-          godot --headless --export-debug "Android" ../build/android/${EXPORT_NAME}-debug.apk
+          sed 's@keystore/debug=".*"@keystore/debug="'root/debug.keystore'"@g' -i export_presets.cfg
+          godot --headless --export-debug "Android Debug" ../build/android/${EXPORT_NAME}-debug.apk
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
