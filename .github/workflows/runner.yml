@@ -207,40 +207,41 @@ jobs:
         with:
           branch: gh-pages # The branch the action should deploy to.
           folder: build/web # The folder the action should deploy.
-#  android-build:
-#    name: 🤖 Android Build
-#    needs: translate
-#    runs-on: ubuntu-20.04
-#    container:
-#      image: barichello/godot-ci:3.5.2
-#    steps:
-#      - name: Check Submodules
-#        uses: actions/checkout@v4
-#        with:
-#          lfs: true
-#      - name: Download translation artifact
-#        uses: actions/download-artifact@v4
-#        with:
-#          name: bdcc-chinese-translation
-#      - name: Unzip translation artifact
-#        run: unzip BdccChineseLocalization.zip -d ./BdccChineseLocalization
-#      - name: Setup
-#        run: |
-#          mkdir -v -p ~/.local/share/godot/templates
-#          mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/templates/${GODOT_VERSION}.stable
-#
-#      - name: Build
-#        run: |
-#          echo "${{ secrets.ANDROID_KEYSTORE_FILE }}" | base64 --decode > root/debug.keystore
-#          mkdir -v -p ./build/android
-#          cd BdccChineseLocalization
-#          sed 's@keystore/debug=".*"@keystore/debug="'root/debug.keystore'"@g' -i export_presets.cfg
-#          godot --headless --export-debug "Android Debug" ../build/android/${EXPORT_NAME}-debug.apk
-#      - name: Upload artifact
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: bdcc-android
-#          path: ./build/android/BDCC-Android-debug.apk
+  android-build:
+    name: 🤖 Android Build
+    needs: translate
+    runs-on: ubuntu-20.04
+    container:
+      image: barichello/godot-ci:3.5.2
+    steps:
+      - name: Check Submodules
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Download translation artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bdcc-chinese-translation
+      - name: Unzip translation artifact
+        run: unzip BdccChineseLocalization.zip -d ./BdccChineseLocalization
+      - name: Setup
+        run: |
+          mkdir -v -p ~/.local/share/godot/templates
+          mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable ~/.local/share/godot/templates/${GODOT_VERSION}.stable
+
+      - name: Build
+        run: |
+         
+          mkdir -v -p ./build/android
+          cd BdccChineseLocalization
+          echo "${{ secrets.ANDROID_KEYSTORE_FILE }}" | base64 --decode > ${{ github.workspace }}/debug.keystore
+          sed 's@keystore/debug=".*"@keystore/debug="'${{ github.workspace }}/debug.keystore'"@g' -i export_presets.cfg
+          godot --headless --export-debug "Android Debug" ../build/android/${EXPORT_NAME}-debug.apk
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bdcc-android
+          path: ./build/android/BDCC-Android-debug.apk
   
   
   release:
