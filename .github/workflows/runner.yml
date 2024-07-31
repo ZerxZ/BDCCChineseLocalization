@@ -237,10 +237,7 @@ jobs:
         run: |
           mkdir -v -p ./build/android
           cd BdccChineseLocalization
-#          sed 's|export/android/android_sdk_path = ".*"|export/android/android_sdk_path = "'/usr/lib/android-sdk'"|g' -i /root/.config/godot/editor_settings-3.tres
-#          mkdir -v -p ~/.config/godot
-#          cp -v /root/.config/godot/editor_settings-3.tres ~/.config/godot/
-          echo 'export/android/android_sdk_path = "'/usr/lib/android-sdk'"' >> ~/.config/godot/editor_settings-3.tres
+          echo 'export/android/android_sdk_path = "/usr/lib/android-sdk"' >> ~/.config/godot/editor_settings-3.tres
           echo "${{ secrets.ANDROID_KEYSTORE_FILE }}" | base64 --decode > $GITHUB_WORKSPACE/debug.keystore
           sed 's@keystore/debug=".*"@keystore/debug="'$GITHUB_WORKSPACE/debug.keystore'"@g' -i export_presets.cfg
           sed 's@keystore/release=".*"@keystore/release="'$GITHUB_WORKSPACE/debug.keystore'"@g' -i export_presets.cfg
