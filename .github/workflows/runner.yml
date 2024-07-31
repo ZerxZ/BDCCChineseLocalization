@@ -273,6 +273,7 @@ jobs:
           allowUpdates: true
           artifacts: |
             *.zip
+            *.apk
       - name: Automatic Releases
         uses: ncipollo/release-action@v1.14.0
         env:
@@ -283,4 +284,5 @@ jobs:
           name: "Bdcc Release ${{ env.RELEASE_VERSION }}"
           allowUpdates: true
           artifacts: |
-            *.zip  
+            *.zip
+            *.apk
