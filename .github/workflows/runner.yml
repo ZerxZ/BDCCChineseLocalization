@@ -246,12 +246,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bdcc-android
-          path: ./build/android/BDCC-Android-debug.apk
+          path: ./build/android/BDCC-debug.apk
   
   
   release:
     name: 🚀 Release
-    needs: [ window-build, linux-build, macos-build, web-build ]
+    needs: [ window-build, linux-build, macos-build, web-build,android-build ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.1
