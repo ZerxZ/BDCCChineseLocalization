@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BDCCChineseLocalization", "BDCCChineseLocalization\BDCCChineseLocalization.csproj", "{CF9A461A-19B5-43ED-9690-B3FD9A3558CC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paratranz.NET", "Paratranz.NET\Paratranz.NET\Paratranz.NET.csproj", "{C4E9D30F-33CF-4CAB-B1CB-6150AE448DC6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paratranz.NET", "Paratranz.NET\Paratranz.NET\Paratranz.NET\Paratranz.NET.csproj", "{33CFD0E9-D638-482F-92C7-2C02A394AF89}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -14,9 +14,9 @@ Global
 		{CF9A461A-19B5-43ED-9690-B3FD9A3558CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CF9A461A-19B5-43ED-9690-B3FD9A3558CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CF9A461A-19B5-43ED-9690-B3FD9A3558CC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C4E9D30F-33CF-4CAB-B1CB-6150AE448DC6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C4E9D30F-33CF-4CAB-B1CB-6150AE448DC6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C4E9D30F-33CF-4CAB-B1CB-6150AE448DC6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C4E9D30F-33CF-4CAB-B1CB-6150AE448DC6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{33CFD0E9-D638-482F-92C7-2C02A394AF89}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{33CFD0E9-D638-482F-92C7-2C02A394AF89}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{33CFD0E9-D638-482F-92C7-2C02A394AF89}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{33CFD0E9-D638-482F-92C7-2C02A394AF89}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
