@@ -8,7 +8,6 @@ using BDCCChineseLocalization.Paratranz;
 using CommandDotNet;
 using GDShrapt.Reader;
 using Newtonsoft.Json;
-using Paratranz.NET;
 using Python.Deployment;
 using Python.Runtime;
 using Installer = Python.Included.Installer;
@@ -248,15 +247,12 @@ public class Program
         }
         // TranslationHashIndexFile.SetDir(currentDir);
         // TranslationHashIndexFile.Instance.Load();
-        using var client            = new ParatranzClient(api);
+        var client            = new ParatranzClient(api);
         var       cancellationToken = new CancellationToken();
-        await client.BuildArtifactAsync(projectId, cancellationToken);
-        var             downloadStream = await client.DownloadArtifactAsync(projectId, cancellationToken);
-        await using var fs             = File.Open(artifactFilePath, FileMode.Create);
-        Console.WriteLine($"Downloading artifact to {artifactFilePath}");
-        await downloadStream.CopyToAsync(fs, cancellationToken);
-        fs.Close();
-        downloadStream.Close();
+        var stream = await client.DownloadArtifactAsync(projectId, cancellationToken);
+        await using var fileStream = File.Create(artifactFilePath);
+        await stream.CopyToAsync(fileStream, cancellationToken);
+        fileStream.Close();
 
 
         if (!Directory.Exists(inputPath))

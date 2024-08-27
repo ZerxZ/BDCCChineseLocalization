@@ -14,6 +14,15 @@
         "resolved": "7.0.4",
         "contentHash": "uqZTCDI+Sk7oig+5ns8dX7YG7yvQ5BLBweX93GaMswUh0JDzqXok42SPQP8MyVd31HBHnqNm2j/HBotCj70U3Q=="
       },
+      "Flurl.Http": {
+        "type": "Direct",
+        "requested": "[4.0.2, )",
+        "resolved": "4.0.2",
+        "contentHash": "9vCqFFyceA11yplkFD8AbCFFTvG1Lrw3tpsgOpL5sLUc28p6zcvGszNleuT6nDymRvtt5eS+rqUX+bRztg1fhA==",
+        "dependencies": {
+          "Flurl": "4.0.0"
+        }
+      },
       "GDShrapt.Reader": {
         "type": "Direct",
         "requested": "[4.3.0-alpha, )",
@@ -125,8 +134,8 @@
       },
       "Flurl": {
         "type": "Transitive",
-        "resolved": "3.0.7",
-        "contentHash": "W3zHc8m6/yqOAedHwpFQv5VT8t0W/jkS3AVlv1Tj520KDNjUa31at0zMc3XYJy8f9qdOmUcvSUarf6G2nK1ZIg=="
+        "resolved": "4.0.0",
+        "contentHash": "rpts69yYgvJqg6PPgqShBQEZ4aNzWQqWpWppcT0oDWxDCIsBqiod4pj6LQZdhk+1OozLFagemldMRACdHF3CsA=="
       },
       "Microsoft.CSharp": {
         "type": "Transitive",
