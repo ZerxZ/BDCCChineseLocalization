@@ -20,50 +20,50 @@ public class ErrorFile
         File = file;
         Exception = exception.ToString();
     }
+
     public ErrorFile(string file, string exception)
     {
         File = file;
         Exception = exception;
     }
+
     public ErrorFile()
     {
         File = string.Empty;
         Exception = string.Empty;
     }
-    public string File      { get; set; }
+
+    public string File { get; set; }
     public string Exception { get; set; }
 }
 
-[Command(
-    Description = "提取字典和翻译BDCC项目"
-)]
+[Command(Description = "提取字典和翻译BDCC项目")]
 public class Program
 {
-    private static readonly HashSet<string> BanPath = new HashSet<string>()
-    {
-        "GameUI",
-        "gdunzip",
-        "Polygon2dWeightsFlipper",
-        "FertilityBetterOvulationV2",
-        "NpcLikesLineUI",
-        "OptionPriorityListType",
-        "RichTextCorrupt",
-        "RichTextCuss",
-        "AutoTranslation",
-        "SexActivityCreator",
-        "StrugglingGame",
-        "HK_DatapadHackComputer",
-        "ColorUtils",
-        "RopesOralSex",
-        "RopesSex",
-        "RopesSolo",
-        "FetishesWithNumbers",
-        "Strings",
-        "AddRemoveListVarUI",
-        "CapEnergyBlast"
-    };
-    private static int Main(string[] args) =>
-        new AppRunner<Program>().Run(args);
+    // private static readonly HashSet<string> BanPath = new HashSet<string>()
+    // {
+    //     "GameUI",
+    //     "gdunzip",
+    //     "Polygon2dWeightsFlipper",
+    //     "FertilityBetterOvulationV2",
+    //     "NpcLikesLineUI",
+    //     "OptionPriorityListType",
+    //     "RichTextCorrupt",
+    //     "RichTextCuss",
+    //     "AutoTranslation",
+    //     "SexActivityCreator",
+    //     "StrugglingGame",
+    //     "HK_DatapadHackComputer",
+    //     "ColorUtils",
+    //     "RopesOralSex",
+    //     "RopesSex",
+    //     "RopesSolo",
+    //     "FetishesWithNumbers",
+    //     "Strings",
+    //     "AddRemoveListVarUI",
+    //     "CapEnergyBlast"
+    // };
+    private static int Main(string[] args) => new AppRunner<Program>().Run(args);
 
     [Command(
         Description = "提取项目",
@@ -74,7 +74,7 @@ public class Program
         ]
     )]
     public async Task Extract(
-        [Option('p', "path",   Description = "项目路径")]   string path   = "BDCC",
+        [Option('p', "path", Description = "项目路径")] string path = "BDCC",
         [Option('o', "output", Description = "输出项目路径")] string output = "Output"
     )
     {
@@ -100,13 +100,12 @@ public class Program
         }
         var paratranzPath = Path.Combine(output, "paratranz");
         // var tscnDirPath   = Path.Combine(output, "tscn");
-        var gdFiles   = Directory.GetFiles(path, "*.gd",   SearchOption.AllDirectories);
+        var gdFiles = Directory.GetFiles(path, "*.gd", SearchOption.AllDirectories);
         var tscnFiles = Directory.GetFiles(path, "*.tscn", SearchOption.AllDirectories);
 
-
-        var errorFiles   = new List<ErrorFile>();
+        var errorFiles = new List<ErrorFile>();
         var skippedFiles = new List<string>();
-        var completed    = 0;
+        var completed = 0;
         TranslationHashIndexFile.SetDir(currentDir);
         TranslationHashIndexFile.Instance.Load();
         foreach (var gdFile in gdFiles)
@@ -115,35 +114,41 @@ public class Program
             try
             {
                 var fileName = Path.GetFileNameWithoutExtension(gdFile);
-                if (BanPath.Contains(fileName))
-                {
-                    skippedFiles.Add(gdFile);
-                    // errorFiles.Add(new ErrorFile(file, "File is banned"));
-                    continue;
-                }
-                var parser = GdScriptParser.Parse(await File.ReadAllTextAsync(gdFile), Path.GetRelativePath(path, gdFile));
+                // if (BanPath.Contains(fileName))
+                // {
+                //     skippedFiles.Add(gdFile);
+                //     // errorFiles.Add(new ErrorFile(file, "File is banned"));
+                //     continue;
+                // }
+                var parser = GdScriptParser.Parse(
+                    await File.ReadAllTextAsync(gdFile),
+                    Path.GetRelativePath(path, gdFile)
+                );
                 parser.Parse();
                 if (!parser.HasTokens)
                 {
                     continue;
                 }
-                var paratranzFilePath  = Path.ChangeExtension(gdFile.Replace(path, paratranzPath), "json");
+                var paratranzFilePath = Path.ChangeExtension(
+                    gdFile.Replace(path, paratranzPath),
+                    "json"
+                );
                 var paratranzDirectory = Path.GetDirectoryName(paratranzFilePath)!;
-
 
                 if (!Directory.Exists(paratranzDirectory))
                 {
                     Directory.CreateDirectory(paratranzDirectory);
                 }
-                await File.WriteAllTextAsync(paratranzFilePath, ParatranzConverter.Serialize(parser.Tokens));
+                await File.WriteAllTextAsync(
+                    paratranzFilePath,
+                    ParatranzConverter.Serialize(parser.Tokens)
+                );
                 completed++;
             }
             catch (Exception e)
             {
                 errorFiles.Add(new ErrorFile(gdFile, e));
-
             }
-
         }
 
         foreach (var tscnFile in tscnFiles)
@@ -152,27 +157,33 @@ public class Program
             {
                 var fileName = Path.GetFileNameWithoutExtension(tscnFile);
 
-                var parser = new TscnParser(await File.ReadAllTextAsync(tscnFile), Path.GetRelativePath(path, tscnFile));
+                var parser = new TscnParser(
+                    await File.ReadAllTextAsync(tscnFile),
+                    Path.GetRelativePath(path, tscnFile)
+                );
                 parser.Parse();
                 if (!parser.HasTokens)
                 {
                     continue;
                 }
-                var paratranzFilePath  = Path.ChangeExtension(tscnFile.Replace(path, paratranzPath), "tscn.json");
+                var paratranzFilePath = Path.ChangeExtension(
+                    tscnFile.Replace(path, paratranzPath),
+                    "tscn.json"
+                );
                 var paratranzDirectory = Path.GetDirectoryName(paratranzFilePath)!;
                 if (!Directory.Exists(paratranzDirectory))
                 {
                     Directory.CreateDirectory(paratranzDirectory);
                 }
-                await File.WriteAllTextAsync(paratranzFilePath, ParatranzConverter.Serialize(parser.Tokens));
-
-
+                await File.WriteAllTextAsync(
+                    paratranzFilePath,
+                    ParatranzConverter.Serialize(parser.Tokens)
+                );
             }
             catch (Exception e)
             {
                 Console.WriteLine(e);
             }
-
         }
         TranslationHashIndexFile.Instance.Save();
         Console.WriteLine("Extraction complete, files processed: " + completed);
@@ -188,9 +199,11 @@ public class Program
                 sb.AppendLine($"Exception:\n{errorFile.Exception.ToString()}");
             }
 
-
-            await File.WriteAllTextAsync(Path.Combine(output, "error.txt"),  sb.ToString());
-            await File.WriteAllTextAsync(Path.Combine(output, "error.json"), JsonConvert.SerializeObject(errorFiles));
+            await File.WriteAllTextAsync(Path.Combine(output, "error.txt"), sb.ToString());
+            await File.WriteAllTextAsync(
+                Path.Combine(output, "error.json"),
+                JsonConvert.SerializeObject(errorFiles)
+            );
         }
         if (skippedFiles.Count > 0)
         {
@@ -212,10 +225,9 @@ public class Program
     )]
     public async Task Translate(
         [Operand("api", Description = "Paratranz API Key")] string api,
-        [CommandDotNet.Operand("projectID", Description = "Paratranz Project ID")]
-        int projectId,
+        [CommandDotNet.Operand("projectID", Description = "Paratranz Project ID")] int projectId,
         [Option('i', "input", Description = "项目路径")] string inputPath = "BDCC"
-        //, [Option('t', "translation", Description = "翻译项目路径")] string translation = "Output"
+    //, [Option('t', "translation", Description = "翻译项目路径")] string translation = "Output"
     )
     {
         var currentDir = Path.GetFullPath(".");
@@ -230,8 +242,7 @@ public class Program
 
         var bdccLocalizationReplacerPath = Path.GetFullPath("BDCC-Localization-Replacer");
 
-
-        var artifactDirPath  = Path.GetFullPath("Artifact");
+        var artifactDirPath = Path.GetFullPath("Artifact");
         var artifactFilePath = Path.Combine(artifactDirPath, "artifact.zip");
 
         if (Directory.Exists(artifactDirPath))
@@ -247,13 +258,12 @@ public class Program
         }
         // TranslationHashIndexFile.SetDir(currentDir);
         // TranslationHashIndexFile.Instance.Load();
-        var client            = new ParatranzClient(api);
-        var       cancellationToken = new CancellationToken();
+        var client = new ParatranzClient(api);
+        var cancellationToken = new CancellationToken();
         var stream = await client.DownloadArtifactAsync(projectId, cancellationToken);
         await using var fileStream = File.Create(artifactFilePath);
         await stream.CopyToAsync(fileStream, cancellationToken);
         fileStream.Close();
-
 
         if (!Directory.Exists(inputPath))
         {
@@ -268,19 +278,31 @@ public class Program
         ZipFile.ExtractToDirectory(artifactFilePath, artifactDirPath);
         var extractedDirPath = Path.Combine(artifactDirPath, "utf8");
 
-        CopyDirectory(extractedDirPath, Path.Combine(bdccLocalizationReplacerPath, "trans"),  true);
-        CopyDirectory(inputPath,        Path.Combine(bdccLocalizationReplacerPath, "source"), true);
+        CopyDirectory(extractedDirPath, Path.Combine(bdccLocalizationReplacerPath, "fetch"), true);
+        CopyDirectory(inputPath, Path.Combine(bdccLocalizationReplacerPath, "source"), true);
 
-        TranslationHashIndexFile.SetDir(currentDir);
-        await using var sourceStream      = File.Open(TranslationHashIndexFile.Instance.FilePath, FileMode.Open);
-        await using var destinationStream = File.Create(Path.Combine(bdccLocalizationReplacerPath, Path.GetFileName(TranslationHashIndexFile.Instance.FilePath)));
-        await sourceStream.CopyToAsync(destinationStream, cancellationToken);
-        sourceStream.Close();
-        destinationStream.Close();
+        // TranslationHashIndexFile.SetDir(currentDir);
+        // await using var sourceStream = File.Open(
+        //     TranslationHashIndexFile.Instance.FilePath,
+        //     FileMode.Open
+        // );
+        // await using var destinationStream = File.Create(
+        //     Path.Combine(
+        //         bdccLocalizationReplacerPath,
+        //         Path.GetFileName(TranslationHashIndexFile.Instance.FilePath)
+        //     )
+        // );
+        // await sourceStream.CopyToAsync(destinationStream, cancellationToken);
+        // sourceStream.Close();
+        // destinationStream.Close();
 
         await PythonTranslateReplace();
-        ZipFile.CreateFromDirectory(Path.Combine(bdccLocalizationReplacerPath, "output"), Path.Combine(currentDir, "BdccChineseLocalization.zip"));
+        ZipFile.CreateFromDirectory(
+            Path.Combine(bdccLocalizationReplacerPath, "output"),
+            Path.Combine(currentDir, "BdccChineseLocalization.zip")
+        );
     }
+
     static void CopyDirectory(string sourceDir, string destinationDir, bool recursive)
     {
         // Get information about the source directory
@@ -302,7 +324,6 @@ public class Program
             string targetFilePath = Path.Combine(destinationDir, file.Name);
             if (File.Exists(targetFilePath))
             {
-
                 File.Delete(targetFilePath);
             }
             file.CopyTo(targetFilePath);
@@ -318,7 +339,10 @@ public class Program
             }
         }
     }
-    public async Task TestTscn([Option('i', "input", Description = "项目路径")] string inputPath = "BDCC")
+
+    public async Task TestTscn(
+        [Option('i', "input", Description = "项目路径")] string inputPath = "BDCC"
+    )
     {
         if (!Path.IsPathRooted(inputPath))
         {
@@ -337,15 +361,29 @@ public class Program
                 Console.WriteLine(ParatranzConverter.Serialize(tscn.Tokens));
             }
         }
-
     }
+
     public async Task PythonTranslateReplace()
     {
         await Installer.SetupPython(true);
-        var requirements = (await File.ReadAllTextAsync(Path.GetFullPath("BDCC-Localization-Replacer/requirements.txt"))).Replace("\r\n", "\n").Split("\n");
-        foreach (var requirement in requirements.Where(x => !string.IsNullOrWhiteSpace(x) && !x.StartsWith($"#")))
+        var requirements = (
+            await File.ReadAllTextAsync(
+                Path.GetFullPath("BDCC-Localization-Replacer/requirements.txt")
+            )
+        )
+            .Replace("\r\n", "\n")
+            .Split("\n");
+        foreach (
+            var requirement in requirements.Where(
+                x => !string.IsNullOrWhiteSpace(x) && !x.StartsWith($"#")
+            )
+        )
         {
-            if (requirement.Contains("==") || requirement.Contains(">=") || requirement.Contains("<="))
+            if (
+                requirement.Contains("==")
+                || requirement.Contains(">=")
+                || requirement.Contains("<=")
+            )
             {
                 var index = requirement.IndexOf("==", StringComparison.Ordinal);
                 if (index == -1)
@@ -356,7 +394,7 @@ public class Program
                 {
                     index = requirement.IndexOf("<=", StringComparison.Ordinal);
                 }
-                var module  = requirement[..index].Trim();
+                var module = requirement[..index].Trim();
                 var version = requirement[(index + 2)..].Trim();
                 await Installer.PipInstallModule(module, version);
                 continue;
@@ -368,10 +406,9 @@ public class Program
         var buildSrc = Path.GetFullPath("BDCC-Localization-Replacer/main.py");
         using (Py.GIL())
         {
-
             // var main = PythonEngine.Compile(code, src, RunFlagType.File);
 
-            dynamic os  = Py.Import("os");
+            dynamic os = Py.Import("os");
             dynamic sys = Py.Import("sys");
             // // Console.WriteLine(os.path.dirname(os.path.expanduser(filePath)));
             sys.path.append(os.path.dirname(os.path.expanduser(buildSrc)));
@@ -379,23 +416,24 @@ public class Program
             // Console.WriteLine(sys.path);
             var fromFile = Py.Import(Path.GetFileNameWithoutExtension(buildSrc));
             //
-            fromFile.InvokeMethod("main");
+            fromFile.InvokeMethod("translate_new");
         }
         // PythonEngine.Shutdown();
         Console.WriteLine("Done");
     }
+
     public async Task TestScript()
     {
         await PythonTranslateReplace();
     }
+
     public async Task TestErrorFiles(string path = "output")
     {
-
         // var script = """
         //              tool
         //              extends Polygon2D
-        //              
-        //              				
+        //
+        //
         //              func SetFlipLegPos(_newvalue):
         //              	if(color.r >= 0.99):
         //              		# was left, became right
@@ -420,13 +458,15 @@ public class Program
         {
             path = Path.GetFullPath(path);
         }
-        var errorFiles = JsonConvert.DeserializeObject<List<ErrorFile>>(await File.ReadAllTextAsync(Path.Combine(path, "error.json")));
-        if (errorFiles == null) return;
+        var errorFiles = JsonConvert.DeserializeObject<List<ErrorFile>>(
+            await File.ReadAllTextAsync(Path.Combine(path, "error.json"))
+        );
+        if (errorFiles == null)
+            return;
         foreach (var errorFile in errorFiles)
         {
             Console.WriteLine(errorFile.File);
             // Console.WriteLine(errorFile.Exception);
         }
-
     }
 }
