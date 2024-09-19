@@ -277,7 +277,12 @@ public class Program
         // }
         ZipFile.ExtractToDirectory(artifactFilePath, artifactDirPath);
         var extractedDirPath = Path.Combine(artifactDirPath, "utf8");
+        var fetchDirPath = Path.Combine(bdccLocalizationReplacerPath, "fetch");
 
+        if (Directory.Exists(fetchDirPath))
+        {
+            Directory.Delete(fetchDirPath, true);
+        }
         CopyDirectory(extractedDirPath, Path.Combine(bdccLocalizationReplacerPath, "fetch"), true);
         CopyDirectory(inputPath, Path.Combine(bdccLocalizationReplacerPath, "source"), true);
 
@@ -297,6 +302,12 @@ public class Program
         // destinationStream.Close();
 
         await PythonTranslateReplace();
+
+        var zipFilePath = Path.Combine(currentDir, "BdccChineseLocalization.zip");
+        if (File.Exists(zipFilePath))
+        {
+            File.Delete(zipFilePath);
+        }
         ZipFile.CreateFromDirectory(
             Path.Combine(bdccLocalizationReplacerPath, "output"),
             Path.Combine(currentDir, "BdccChineseLocalization.zip")
