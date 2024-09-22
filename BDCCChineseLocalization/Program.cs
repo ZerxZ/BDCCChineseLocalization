@@ -278,13 +278,18 @@ public class Program
         ZipFile.ExtractToDirectory(artifactFilePath, artifactDirPath);
         var extractedDirPath = Path.Combine(artifactDirPath, "utf8");
         var fetchDirPath = Path.Combine(bdccLocalizationReplacerPath, "fetch");
+        var sourceDirPath = Path.Combine(bdccLocalizationReplacerPath, "source");
 
         if (Directory.Exists(fetchDirPath))
         {
             Directory.Delete(fetchDirPath, true);
         }
-        CopyDirectory(extractedDirPath, Path.Combine(bdccLocalizationReplacerPath, "fetch"), true);
-        CopyDirectory(inputPath, Path.Combine(bdccLocalizationReplacerPath, "source"), true);
+        if (Directory.Exists(sourceDirPath))
+        {
+            Directory.Delete(sourceDirPath, true);
+        }
+        CopyDirectory(extractedDirPath, fetchDirPath, true);
+        CopyDirectory(inputPath, sourceDirPath, true);
 
         // TranslationHashIndexFile.SetDir(currentDir);
         // await using var sourceStream = File.Open(
