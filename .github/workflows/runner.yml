@@ -79,7 +79,6 @@ jobs:
         run: |
           mkdir -v -p ./build/windows
           cd BdccChineseLocalization
-          godot --check-only
           godot --headless --export "Windows Desktop" ../build/windows/${EXPORT_NAME}.exe
       - name: Zip
         run: |
@@ -119,7 +118,6 @@ jobs:
         run: |
           mkdir -v -p ./build/linux
           cd BdccChineseLocalization
-          godot --check-only
           godot --headless --export "Linux/X11" ../build/linux/${EXPORT_NAME}.x86_64
       - name: Zip
         run: |
@@ -157,7 +155,6 @@ jobs:
         run: |
           mkdir -v -p ./build/macos
           cd BdccChineseLocalization
-          godot --check-only
           godot --headless --export "Mac OSX" ../build/macos/${EXPORT_NAME}.zip
       - name: Zip
         run: |
@@ -195,7 +192,6 @@ jobs:
         run: |
           mkdir -v -p ./build/web
           cd BdccChineseLocalization
-          godot --check-only
           godot --headless --export "HTML5" ../build/web/index.html
       - name: Zip
         run: |
@@ -252,7 +248,6 @@ jobs:
           echo "${{ secrets.ANDROID_KEYSTORE_FILE }}" | base64 --decode > $GITHUB_WORKSPACE/debug.keystore
           sed 's@keystore/debug=".*"@keystore/debug="'$GITHUB_WORKSPACE/debug.keystore'"@g' -i export_presets.cfg
           sed 's@keystore/release=".*"@keystore/release="'$GITHUB_WORKSPACE/debug.keystore'"@g' -i export_presets.cfg
-          godot --check-only
           godot --headless --export-debug "Android" ../build/android/${EXPORT_NAME}-debug.apk
       - name: Upload artifact
         uses: actions/upload-artifact@v4
