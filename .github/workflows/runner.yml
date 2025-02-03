@@ -18,6 +18,9 @@ jobs:
   translate:
     name: 🌐 Translate
     runs-on: windows-latest
+    env:
+      LANG: en_US.UTF-8
+      LC_ALL: en_US.UTF-8
     steps:
       - name: Check Submodules
         uses: actions/checkout@v4
@@ -46,6 +49,8 @@ jobs:
           dotnet-version: "8.0.x"
 
       - name: Run translation
+        env:
+          PYTHONIOENCODING: utf-8  # 如果是 Python 脚本
         run: dotnet run --project BDCCChineseLocalization Translate ${{ env.PARATRANZ_TOKEN }} ${{ env.PARATRANZ_PROJECT }}
       - name: Upload translation artifact
         uses: actions/upload-artifact@v4
